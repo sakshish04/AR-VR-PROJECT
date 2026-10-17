@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>IVRAR PBL Starter Scene - How can voice-driven spatial NLP commands in Unity VR reduce task completion lat...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
+  <style>
+    #overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(10, 15, 30, 0.85);
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 12px 18px;
+      border-radius: 8px;
+      z-index: 999;
+      max-width: 400px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    h3 { margin: 0 0 6px 0; font-size: 15px; color: #4fc3f7; }
+    p { margin: 0 0 4px 0; font-size: 12px; line-height: 1.4; color: #cfd8dc; }
+    .badge { display: inline-block; background: #0288d1; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div id="overlay">
+    <span class="badge">IVRAR IVRAR_GROUP_05</span>
+    <h3>How can voice-driven spatial NLP commands in Unity VR reduce task completion lat...</h3>
+    <p><strong>Standards:</strong> IEEE 2888.1 / ISO 9241-210 / W3C WebXR</p>
+    <p><strong>Controls:</strong> WASD keys to walk, mouse click & drag to look around. Click VR button on VR headsets.</p>
+    <p><strong>Status:</strong> WebXR Spatial Telemetry Logger Active</p>
+  </div>
+
+  <a-scene background="color: #1a1a2e">
+    <a-plane position="0 0 0" rotation="-90 0 0" width="20" height="20" color="#263238" roughness="0.8"></a-plane>
+    
+    <!-- Central Interactive Entity -->
+    <a-box id="interactive_target" position="0 1.2 -3" rotation="0 45 0" color="#00adb5" animation="property: rotation; to: 0 405 0; loop: true; dur: 8000"></a-box>
+    
+    <!-- Spatial Light Sources -->
+    <a-light type="ambient" color="#546e7a"></a-light>
+    <a-light type="directional" position="2 4 1" intensity="0.8" color="#ffffff"></a-light>
+
+    <!-- Rig with Camera and Gaze Cursor -->
+    <a-entity id="rig" movement-controls>
+      <a-entity camera position="0 1.6 0" look-controls>
+        <a-cursor color="#ff5722" fuse="false"></a-cursor>
+      </a-entity>
+    </a-entity>
+  </a-scene>
+</body>
+</html>

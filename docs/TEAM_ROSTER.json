@@ -1,0 +1,91 @@
+{
+  "group_id": "IVRAR_GROUP_05",
+  "folder_name": "Group_05_Sakshi_Aryan",
+  "batch": "Batch B2",
+  "authorized_title": "How can voice-driven spatial NLP commands in Unity VR reduce task completion latency and interaction failure rates for motor-impaired users facing physical controller barriers?",
+  "members": [
+    {
+      "roll_no": "A057",
+      "sap_id": "70012400052",
+      "name": "Sakshi Sharma",
+      "program": "B.Tech Information Technology",
+      "role": "XR Systems Architect & OpenXR Gaze Binding Lead",
+      "assigned_branch": "feat/a057-xr-systems-architect",
+      "github_username": ""
+    },
+    {
+      "roll_no": "I077",
+      "sap_id": "70122500084",
+      "name": "Aryan Kanungo",
+      "program": "B.Tech Artificial Intelligence",
+      "role": "Spatial NLP Engine & Ergonomic Telemetry Lead",
+      "assigned_branch": "feat/i077-spatial-nlp-accessibility",
+      "github_username": ""
+    }
+  ],
+  "foundational_papers": [
+    {
+      "id": "P1",
+      "citation_key": "Bolt1980",
+      "title": "'Put-that-there': Voice and gesture at the graphics interface",
+      "authors": "R. A. Bolt",
+      "year": 1980,
+      "journal": "ACM SIGGRAPH Computer Graphics, vol. 14, no. 3, pp. 262-270",
+      "doi": "10.1145/800250.807503"
+    },
+    {
+      "id": "P2",
+      "citation_key": "MacKenzie1992",
+      "title": "Fitts' law as a research and design tool in human-computer interaction",
+      "authors": "I. S. MacKenzie",
+      "year": 1992,
+      "journal": "Human-Computer Interaction, vol. 7, no. 1, pp. 91-139",
+      "doi": "10.1207/s15327051hci0701_3"
+    },
+    {
+      "id": "P3",
+      "citation_key": "Yan2023",
+      "title": "ConeSpeech: Exploring Directional Speech Interaction for Multi-Person Remote Communication in Virtual Reality",
+      "authors": "Y. Yan, H. Liu, Y. Shi, J. Wang, R. Guo, Z. Li, X. Xu, C. Yu, Y. Wang, Y. Shi, M. Billinghurst",
+      "year": 2023,
+      "journal": "IEEE Transactions on Visualization and Computer Graphics, vol. 29, no. 5, pp. 2647-2657",
+      "doi": "10.1109/TVCG.2023.3247085"
+    },
+    {
+      "id": "P4",
+      "citation_key": "Zhang2023",
+      "title": "Tell Me Where To Go: Voice-Controlled Hands-Free Locomotion for Virtual Reality Systems",
+      "authors": "M. Zhang, J. Huang, Z. Chen, X. Yang",
+      "year": 2023,
+      "journal": "2023 IEEE Conference on Virtual Reality and 3D User Interfaces (VR), pp. 1-10",
+      "doi": "10.1109/vr55154.2023.00028"
+    },
+    {
+      "id": "P5",
+      "citation_key": "Kabir2025",
+      "title": "Multimodal Hands-Free VR For Wheelchair Users With Upper Limb Mobility Limitations: Leaning, Head-Gain, and Gaze Pointing",
+      "authors": "M. A. Kabir, S. R. Cooper, S. S. Sundar, C. E. Stewart",
+      "year": 2025,
+      "journal": "2025 IEEE Conference on Virtual Reality and 3D User Interfaces Abstracts and Workshops (VRW), pp. 1-6",
+      "doi": "10.1109/vrw66409.2025.00032"
+    },
+    {
+      "id": "P6",
+      "citation_key": "Oliveira2025",
+      "title": "Beyond buttons: A user-centric approach to hands-free locomotion in Virtual Reality via voice commands",
+      "authors": "A. S. R. Oliveira, L. B. M. Silva, V. F. Lucena",
+      "year": 2025,
+      "journal": "Computers & Graphics, vol. 128, p. 104318",
+      "doi": "10.1016/j.cag.2025.104318"
+    }
+  ],
+  "domain": "Voice-Driven Spatial NLP Commands in Unity VR for Motor-Impaired Accessibility",
+  "project_showcase": {
+    "platform": "LinkedIn Video",
+    "linkedin_url": "PENDING_SUBMISSION",
+    "video_poster_path": "docs/figures/video_poster.png",
+    "video_duration_target": "60-90 seconds",
+    "submission_status": "PENDING",
+    "submission_instructions": "Paste your published LinkedIn post URL into 'linkedin_url' and submit a Pull Request"
+  }
+}
