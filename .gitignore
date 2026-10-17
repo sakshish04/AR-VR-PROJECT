@@ -1,0 +1,51 @@
+# Unity-generated, machine-specific or regenerable files.
+# Essential configuration is deliberately NOT ignored: Assets/ (including .meta files),
+# Packages/manifest.json, Packages/packages-lock.json and ProjectSettings/ must stay visible to Git.
+# No Git LFS rules here (deferred by team decision).
+
+# Unity
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Local build outputs (never commit builds)
+/[Bb]uild/
+/[Bb]uilds/
+*.apk
+*.aab
+*.unitypackage
+
+# IDE-generated
+.vs/
+.idea/
+.vscode/
+*.csproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+
+# Unity crash/diagnostic leftovers
+sysinfo.txt
+crashlytics-build.properties
+
+# Python caches from the telemetry/ evaluation scripts
+__pycache__/
+*.pyc
+
+# Self-test output only. Real session CSVs are NOT ignored on purpose.
+/telemetry/selftest/
+
+# Local safety backups of Packages/ and ProjectSettings/ taken before consequential changes (e.g. gate G2).
+/.backups/
+
+# OS
+.DS_Store
+Thumbs.db
