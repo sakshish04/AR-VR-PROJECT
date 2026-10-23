@@ -1,0 +1,95 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 939e07d58bc74256b6cb58d86fe35a56, type: 3}
+  m_Name: OculusProjectSetupSettings
+  m_EditorClassIdentifier: Oculus.VR.Editor::OVRProjectSetupSettings
+  boolProperties:
+    keys:
+    - Meta.XR.SDK.31736735fee7ab217bea57cc359d9f23.MarkedAsFixed.Android
+    - Meta.XR.SDK.edfb6eef6866b340551639f2f2c3213d.MarkedAsFixed.Android
+    - Meta.XR.SDK.31736735fee7ab217bea57cc359d9f23.MarkedAsFixed.Standalone
+    - Meta.XR.SDK.edfb6eef6866b340551639f2f2c3213d.MarkedAsFixed.Standalone
+    - Meta.XR.SDK.abe5fe8ba12c549f078f42f84324f5c8.Ignored.WebGL
+    - Meta.XR.SDK.d1afe95ff5c75c7c964973d13e3ed097.Ignored.WebGL
+    - Meta.XR.SDK.31736735fee7ab217bea57cc359d9f23.Ignored.WebGL
+    - Meta.XR.SDK.edfb6eef6866b340551639f2f2c3213d.Ignored.WebGL
+    - Meta.XR.SDK.db3015e9c6512f876f805e2f980c23f5.Ignored.WebGL
+    - Meta.XR.SDK.e5254b8473ce75ef18b1509177e41b75.Ignored.WebGL
+    - Meta.XR.SDK.6e06c276e8c696ad931d29bb2d748365.Ignored.WebGL
+    - Meta.XR.SDK.7cfd41b6ee61985e53030da2b7cb9a13.Ignored.WebGL
+    - Meta.XR.SDK.f0bc65f29c92be0418f9d7dde42ac589.Ignored.WebGL
+    - Meta.XR.SDK.08193c96bfffe61da6a5ef7320284c33.Ignored.WebGL
+    - Meta.XR.SDK.6f45004d2c8bd13edafd5fe7e5512da7.Ignored.WebGL
+    - Meta.XR.SDK.d8c03f917fdcfe949357f33538c59722.Ignored.WebGL
+    - Meta.XR.SDK.d7724529760d5150981afb13174d01bd.Ignored.WebGL
+    - Meta.XR.SDK.c88c58fdcfbe4355a2432bb0b62767dc.Ignored.WebGL
+    - Meta.XR.SDK.d091363c2f43fb028e3651f27ae2ba48.Ignored.WebGL
+    - Meta.XR.SDK.f187f6a71364064d5dd6ff4bb53df965.Ignored.WebGL
+    - Meta.XR.SDK.5ed0f73406461036e7cf82c13c23489d.Ignored.WebGL
+    - Meta.XR.SDK.7f44cdcf7d160f65f7ac4ff5231ecd24.Ignored.WebGL
+    - Meta.XR.SDK.9a6b195643f9dfbe746f2b221a4fbd8e.Ignored.WebGL
+    - Meta.XR.SDK.3b233a9ea78e48bd9612ffbb095bbf54.Ignored.WebGL
+    - Meta.XR.SDK.638f7adf8f20868f13516d471900164f.Ignored.WebGL
+    - Meta.XR.SDK.8d84517a98b29e4a349e71355072f0d5.Ignored.WebGL
+    - Meta.XR.SDK.2b21b26bac8e99c6e21b9daa3effdd89.Ignored.WebGL
+    - Meta.XR.SDK.6abdb39b0bf66ba7c04b0c267c7e2df8.Ignored.WebGL
+    - Meta.XR.SDK.4aeb0c4701b1dd860da35734cac3063a.Ignored.WebGL
+    - Meta.XR.SDK.6d92665a1c0f22127b81de83852d903a.Ignored.WebGL
+    - Meta.XR.SDK.f05d62dc5a6f5e156d44fe5380e07be7.Ignored.WebGL
+    - Meta.XR.SDK.baeb9b90a6acab33ab6ed1cf4c96ef73.Ignored.WebGL
+    - Meta.XR.SDK.4f0465604e784d17e6105086974cfba8.Ignored.WebGL
+    - Meta.XR.SDK.750bc41784731f0d44839d9bdf0a6cc2.Ignored.WebGL
+    - Meta.XR.SDK.6e607fba88a13d9001e7fb09ad1ead20.Ignored.WebGL
+    - Meta.XR.SDK.cb34e72a9e91926ceac3d90a3f748c70.Ignored.WebGL
+    - Meta.XR.SDK.e58851561f7ad326fa1fd25dc1f37de1.Ignored.WebGL
+    - Meta.XR.SDK.67f566fcf25f180b5e1fb0e246490b45.Ignored.WebGL
+    - Meta.XR.SDK.b353894a1fcda77456086f1400deac16.Ignored.WebGL
+    - Meta.XR.SDK.ce43e6c8c4790e57e3c3c1ba8cd6e3c6.Ignored.WebGL
+    - Meta.XR.SDK.ed23edced886600aed08c81b3d9347a6.Ignored.WebGL
+    - Meta.XR.SDK.5482d922a90dfa694c08ebc4f4706961.Ignored.WebGL
+    - Meta.XR.SDK.8f9eeb6de0a8cb010944e3e32e069e04.Ignored.WebGL
+    - Meta.XR.SDK.8646e45bf55f8615565742731a5880bd.Ignored.WebGL
+    - Meta.XR.SDK.9e19460ac3307b6ab90c2c6a7648b221.Ignored.WebGL
+    - Meta.XR.SDK.9afd5b65f9813e8343f5179b24c494bd.Ignored.WebGL
+    - Meta.XR.SDK.b0d6333d346d4a4e795ad7c67250e2b3.Ignored.WebGL
+    - Meta.XR.SDK.02ea7d67ac3690556fd74295df61450b.Ignored.WebGL
+    - Meta.XR.SDK.25a9420e5e81e4b743bd330bc6b59ef4.Ignored.WebGL
+    - Meta.XR.SDK.83907a50303951fb15ead7d63da117b4.Ignored.WebGL
+    - Meta.XR.SDK.e5688a21106d43a76e502a9d9a6f08eb.Ignored.WebGL
+    - Meta.XR.SDK.64c2377f93ea53716ead94cdfd6fe269.Ignored.WebGL
+    - Meta.XR.SDK.ccb337cbe1cc4b41c942f0836f61f842.Ignored.WebGL
+    - Meta.XR.SDK.6a9cf549ebb38ee84b3daa7bc5c2069a.Ignored.WebGL
+    - Meta.XR.SDK.aacc29e33f670d9beb276d23595b9a49.Ignored.WebGL
+    - Meta.XR.SDK.239a55ad89fb2bfb1b0c1422403da829.Ignored.WebGL
+    - Meta.XR.SDK.d6236d97d59d44efc8352508fa224af8.Ignored.WebGL
+    - Meta.XR.SDK.42aedaf04fab5d73963555d7b3649f3a.Ignored.WebGL
+    - Meta.XR.SDK.0d6fa1b932c9939a0c1d2aa4732fc5ff.Ignored.WebGL
+    - Meta.XR.SDK.d375f534094872305fa8f3ff93a41059.Ignored.WebGL
+    - Meta.XR.SDK.dd7fa12a396d34545785f39519ab46f9.Ignored.WebGL
+    - Meta.XR.SDK.03917b46b1927c1b5b12e7c05f481be1.Ignored.WebGL
+    - Meta.XR.SDK.537f8ca5bd14cb4bd37b37bdfea25874.Ignored.WebGL
+    - Meta.XR.SDK.6a357aa7c1afd07b1653ec2f2294f3b7.Ignored.WebGL
+    - Meta.XR.SDK.699c5c0494bf8ee8823f784f64d6a061.Ignored.WebGL
+    - Meta.XR.SDK.e7d7f5cf6f9fb9dcb2db50331d61fb8d.Ignored.WebGL
+    - Meta.XR.SDK.494c28a58430812749592099819e7333.Ignored.WebGL
+    - Meta.XR.SDK.7d5c4c5c639eb49127c9f3d4bacf10a7.Ignored.WebGL
+    - Meta.XR.SDK.a47596ba0bb99fdc187f42b7be7b1542.Ignored.WebGL
+    - Meta.XR.SDK.ffe5f0017351a2664ae153646337a939.Ignored.WebGL
+    - Meta.XR.SDK.50c930ccebc6b4aea6ee27e1d1ef39f1.Ignored.WebGL
+    - Meta.XR.SDK.489debe5b332e57b7a34a6ad4e415255.Ignored.WebGL
+    - Meta.XR.SDK.0c9572929db2e8975ae93ec7dc3239d9.Ignored.WebGL
+    - Meta.XR.SDK.1da2360cd351a28ff9f0e8585049cb2e.Ignored.WebGL
+    - Meta.XR.SDK.b0869d8045371f7d8ea3441090567c41.Ignored.WebGL
+    values: 010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101
+  intProperties:
+    keys: []
+    values: 

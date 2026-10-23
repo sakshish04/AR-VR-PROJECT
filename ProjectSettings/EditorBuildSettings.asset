@@ -4,7 +4,10 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/VoiceVR_Main.unity
+    guid: 83691d41555094d44a12a96f44f120cf
   m_configObjects:
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: ccc405337a3257643b802fdd11490a75, type: 2}
     com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 6f074daa60769e147819aab25c3c7882, type: 2}
