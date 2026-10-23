@@ -2,6 +2,8 @@
 
 **Date:** 2026-10-17 · **Branch:** `dev/group-05-voicevr` (HEAD `3eda462`) · **Unity:** 6000.3.23f1
 
+> **Update 2026-10-23 (Phase 04, research protocol):** rows D-05a and Q-01…Q-07 were added to §1, a status overlay for the study-design decisions was added as §1a, and the D-02 and D-05 rows now cite their dossier locations. **No decision was approved by anyone; nothing in §1a is CONFIRMED.** The full protocol draft is `docs/ROADMAP_PHASE04_RESEARCH_PROTOCOL.md`. Sections 2–7 (approval gates, G0/G2/G4/G5 results) are unchanged and describe the state as of 2026-10-17.
+
 Nothing in the **Approval gates** section has been executed. Meta/Unity version-compatibility statements are **unverified**: the Meta documentation lookup (gate G0) has not been run, so every "proposed" value below is a candidate to verify, not a recommendation to apply blindly.
 
 ## 1. Open decisions (professor / team)
@@ -9,10 +11,10 @@ Nothing in the **Approval gates** section has been executed. Meta/Unity version-
 | ID | Question | Source | Why it matters | Current implementation | Alternatives | Decider |
 |---|---|---|---|---|---|---|
 | D-01 | Is Unity 6.3 acceptable vs the recommended 2022.3 LTS? | `toolchain_spec.md:6` (heading "Recommended"); guide §2.1; dossier §2 | Compatibility and grading | 6000.3.23f1 | Install 2022.3 and retarget | Professor |
-| D-02 | Fitts formula: Shannon `log₂(D/W+1)` or the dossier's `log₂(2D/W)`? | Guide §1.1 vs dossier §1.1/§2 | Every ID/TP value | Shannon (provisional) | `log₂(2D/W)` | Professor |
+| D-02 | Fitts formula: Shannon `log₂(D/W+1)` or the dossier's `log₂(2D/W)`? | Guide §1.1 (Shannon) vs dossier §1.1 (claim table, `TP = log2(2D/W) / MT`, faculty note "Not yet checked: verify") and dossier §2 ("Fundamental equations", `ID = log₂(2D / W)`); dossier locations verified in the file 2026-10-23 | Every ID/TP value | Shannon (provisional) | `log₂(2D/W)` | Professor |
 | D-03 | Minimum-MT safeguard for throughput (0.1 s in starter code; 0.4 s in the figure generator)? | Logger; `generate_paper_figures.py` | Alters TP for fast trials | 0.1 s, raw MT always recorded beside it | None / other value | Professor |
 | D-04 | Study design: conditions, within/between, order, trials per participant, counterbalancing | Dossier §4 (dropdown unselected); manuscript Table I | Validity of stats | Schema accepts `controller`, `gaze_voice` | Add gaze-dwell | Professor / team |
-| D-05 | Participants: recruitment feasibility, motor-impaired or not, consent and ethics procedure | Dossier §4; title | Mandatory N ≥ 10 | None | — | Team + professor |
+| D-05 | Participants: recruitment feasibility, motor-impaired or not, consent and ethics procedure | Dossier §4; title | Dossier §4: minimum N ≥ 10 real people (recommends N = 16–20), voluntary adults, written consent, anonymised IDs | None | — | Team + professor |
 | D-06 | Is gaze-dwell a required condition? | Manuscript Table I vs dossier §2 | Scope | Excluded | Include | Professor |
 | D-07 | Canonical telemetry schema (trial, frame, event) and `toolchain_spec.md`'s `trial_<id>.csv` | Spec vs schema | Compatibility with analysis | Proposed 25/12-column schemas | Rename to professor columns | Professor |
 | D-08 | Is WER required, and who produces reference transcripts? | Dossier §2, §4 | Needs real sessions | `analysis/wer.py` | — | Professor |
@@ -26,6 +28,37 @@ Nothing in the **Approval gates** section has been executed. Meta/Unity version-
 | D-16 | Branch naming: `feat/i077-spatial-nlp-accessib` (guide) vs `…accessibility` (README/roster) vs actual `dev/group-05-voicevr` | Guide §2.2 vs README/roster | Dossier §3.1 counts | `dev/group-05-voicevr` | — | Team |
 | D-17 | Target venue: TVCG/TACCESS/IEEE VR (guide) vs IndiaHCI/ACM ASSETS (dossier) | Guide vs dossier | Paper framing | — | — | Professor |
 | D-18 | `SIMULATED_*.csv` in `telemetry/` are counted by dossier §3.1's `ls telemetry/*.csv` ("real participants") | Dossier §3.1 | Misreport risk | Untouched | Move/rename | Professor |
+| D-05a | **Accessibility research question vs an able-bodied sample.** The faculty-authorised title (dossier §1) is about *motor-impaired* users; only able-bodied volunteers are available. Options: (a) recruit participants with motor impairment; (b) keep the framing, call the able-bodied study a preliminary step and limit every claim to able-bodied users; (c) reword the question to interaction performance in general | Dossier §1 (authorised title); Phase 04 §1 | Which claims the study may make; title and abstract wording | None | (a), (b), (c) | Professor |
+| Q-01 | Primary outcome(s) of the study | Authorised title (task completion latency, interaction failure rate); dossier §4 (throughput, command latency, WER; SUS, NASA-TLX) | Which result the study is judged on | None | Proposed: co-primary latency and failure rate; throughput etc. secondary | Professor |
+| Q-02 | Is the lab docking task (T2) needed, and how is it scored? | Phase 04 §3; `docs/LAB_DOCKS.md` | Scope and session length | Built in the scene, no telemetry | Drop it (T1 only); keep as secondary | Professor |
+| Q-03 | Trial counts per condition, practice trials, per-trial time limit | Phase 04 §3.1 | Statistical precision, session length | None | Proposed: 9 D×W × 3 reps = 27 measured + 9 practice per condition; limit from the pilot | Team, after pilot |
+| Q-04 | Seated vs standing; Meta XR Simulator vs a headset for the study | Phase 04 §5 | Validity, availability | Simulator only; no headset available | Seated; headset only if one becomes available | Team / professor |
+| Q-05 | Compensation and recruitment route | Phase 04 §5 | Ethics, feasibility | None | — | Team + professor |
+| Q-06 | Participant identity: pseudonymous IDs P01, P02, ...; the developers' own test sessions are never participant data | Dossier §4 (anonymised IDs); `TrialRecord` validation | Data integrity | Enforced in code for trial records (pseudonym pattern); gaze event log refuses `Real`; voice CSV has no origin column | Add an origin column to the voice CSV (Phase 05 schema decision) | Team (rule); professor if the policy changes |
+| Q-07 | Sample size justification and the ethics / consent requirements | Dossier §4 (minimum N ≥ 10, recommends 16–20; written consent); Phase 04 §5 | Gates all recruitment | None | — | Professor |
+
+## 1a. Phase 04 study-design decisions — status (2026-10-23)
+
+Statuses: **CONFIRMED** = approved by the professor with date; **PROPOSED** = the project owner's current proposal, not approved; **PENDING PROFESSOR APPROVAL** = cannot be treated as settled until the professor decides; **UNRESOLVED** = nobody has decided. **No row below is CONFIRMED.** Detail and reasoning: `docs/ROADMAP_PHASE04_RESEARCH_PROTOCOL.md` §11.
+
+| ID | Position in the Phase 04 draft | Status |
+|---|---|---|
+| D-02 | Shannon `log2(D/W+1)` proposed; dossier `log2(2D/W)` documented; neither chosen. Data stores raw D, W and MT so either can be recomputed | PROPOSED (Shannon); **conflict, PENDING PROFESSOR APPROVAL** |
+| D-03 | keep raw MT; floor only for throughput | UNRESOLVED (suggestion) |
+| D-04 | C1 controller vs C2 gaze+voice; every participant does both; AB/BA | PROPOSED |
+| D-05 | able-bodied volunteers only available; dossier N ≥ 10 (16–20 recommended) | **PENDING PROFESSOR APPROVAL** |
+| D-05a | options (a)/(b)/(c); none chosen | **PENDING PROFESSOR APPROVAL** |
+| D-06 | no gaze-dwell unless required | PROPOSED (professor may overrule) |
+| D-08 | prompted-phrase accuracy; WER only with free speech | UNRESOLVED (suggestion) |
+| D-09 | keep the offline keyword recogniser | UNRESOLVED (suggestion) |
+| D-11 | recognizer-reported latency plus a stated limitation | UNRESOLVED (suggestion) |
+| Q-01 | co-primary: task completion latency and failure rate | UNRESOLVED (suggestion) |
+| Q-02 | T2 kept, provisional | PROPOSED, provisional |
+| Q-03 | 27 measured + 9 practice trials per condition | UNRESOLVED (suggestion) |
+| Q-04 | seated; simulator for development | UNRESOLVED (suggestion) |
+| Q-05 | none | UNRESOLVED |
+| Q-06 | pseudonymous IDs; team sessions never participant data | PROPOSED (enforced in code) |
+| Q-07 | not assumed | **PENDING PROFESSOR APPROVAL** |
 
 ## 2. Approval gates (nothing below has been done)
 
@@ -63,7 +96,7 @@ Rollback for every package/settings gate: restore `Packages/manifest.json`, `Pac
 
 ## 4. Consolidated blockers and the next single action
 
-**Blockers:** D-01…D-18 above; gates G0–G12; no Play Mode observations yet; no participants; no Quest hardware.
+**Blockers:** D-01…D-18, D-05a and Q-01…Q-07 above; gates G0–G12; no Play Mode observations yet; no participants; no Quest hardware.
 
 **Independent work still available when the Editor is closed:** Fitts target-array layout generator (pure C# + tests, scene wiring behind G6); live trial recorder using `TrialRecord`; Unity batch re-verification after any C# change.
 
