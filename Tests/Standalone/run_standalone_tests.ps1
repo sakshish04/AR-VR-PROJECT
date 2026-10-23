@@ -20,7 +20,12 @@ $dll = Join-Path $out "StandaloneTests.dll"
     (Join-Path $root "Assets\Scripts\Telemetry\TrialCsvWriter.cs") `
     (Join-Path $root "Assets\Scripts\Telemetry\SessionCsvFile.cs") `
     (Join-Path $root "Assets\Scripts\Telemetry\GazeEventLog.cs") `
-    (Join-Path $root "Assets\Scripts\Interaction\GazeInteractionModel.cs")
+    (Join-Path $root "Assets\Scripts\Telemetry\VoiceTelemetryCsvWriter.cs") `
+    (Join-Path $root "Assets\Scripts\Interaction\GazeInteractionModel.cs") `
+    (Join-Path $root "Assets\Scripts\Interaction\HudText.cs") `
+    (Join-Path $root "Assets\Scripts\Lab\LabPlacementRules.cs") `
+    (Join-Path $root "Assets\Scripts\Voice\ExternalRecognizerProtocol.cs") `
+    (Join-Path $root "Assets\Scripts\Voice\VoiceConfidencePolicy.cs")
 if ($LASTEXITCODE -ne 0) { Write-Error "Compile failed"; exit 2 }
 
 $ver = $ref.Name

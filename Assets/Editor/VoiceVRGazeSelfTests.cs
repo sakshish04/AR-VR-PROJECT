@@ -24,10 +24,20 @@ namespace Group05.VoiceVR.EditorTools
     public static class VoiceVRGazeSelfTests
     {
         /// <summary>Number of checks a complete run must record (passed + failed + blocked). Update when checks are added or removed.</summary>
-        const int ExpectedChecks = 26;
+        const int ExpectedChecks = 40;
 
         /// <summary>Exit codes: 0 = every expected check ran and passed; 1 = at least one check failed; 3 = nothing failed but the run was blocked or incomplete.</summary>
         public const int ExitAllPassed = 0, ExitFailed = 1, ExitBlockedOrIncomplete = 3;
+
+        /// <summary>
+        /// The whole test fixture is built at this offset. In the interactive Editor the test scene is loaded ADDITIVELY next to the
+        /// user's scene, and Physics raycasts see colliders from every loaded scene. Without the offset, the production scene's
+        /// identical targets (same positions/sizes as the fixture) tie with the fixture's and can win the raycast, which breaks
+        /// every focus/selection check. 2000 m is far outside the production scene and beyond the gaze ray's max distance.
+        /// </summary>
+        static readonly Vector3 FixtureOffset = new Vector3(2000f, 0f, 2000f);
+
+        static Vector3 V(float x, float y, float z) { return new Vector3(x, y, z) + FixtureOffset; }
 
         static readonly List<string> Lines = new List<string>();
         static int passed, failed, blocked;
@@ -91,9 +101,12 @@ namespace Group05.VoiceVR.EditorTools
             var st = go.AddComponent<SpatialTarget>();
             st.displayName = spoken;
             st.showLabel = false; // keep the edit-mode test free of font/TextMesh dependencies
+            st.showRing = false;  // ... and of shader/material creation (the ring is a runtime-only visual)
             st.EnsureInitialized();
             return st;
         }
+
+        static bool Near(Vector3 x, Vector3 y, float tol = 0.02f) { return (x - y).magnitude <= tol; }
 
         static void Aim(Camera cam, Vector3 point)
         {
@@ -130,21 +143,25 @@ namespace Group05.VoiceVR.EditorTools
                 setupComplete = true;
 
                 var camGo = new GameObject("TestCamera");
-                camGo.transform.position = new Vector3(0f, 1.6f, 0f);
-                var cam = camGo.AddComponent<Camera>();
+                camGo.transform.position = V(0f, 1.6f, 0f);
+                var cam = camGo.AddComponent<Camera>();   // passed to the system via gazeCamera below; Camera.main is never used for these checks
 
-                Prim(PrimitiveType.Plane, "Floor", Vector3.zero, new Vector3(1.5f, 1f, 1.5f));
-                Prim(PrimitiveType.Cube, "Distractor", new Vector3(2.6f, 0.6f, 3f), new Vector3(0.8f, 1.2f, 0.8f));
-                SpatialTarget a = Target(PrimitiveType.Cube, "A", "red cube", new Vector3(-1.4f, 1.3f, 3f));
-                SpatialTarget b = Target(PrimitiveType.Sphere, "B", "blue sphere", new Vector3(0f, 1.3f, 3f));
-                SpatialTarget c = Target(PrimitiveType.Capsule, "C", "green capsule", new Vector3(1.2f, 1.3f, 3f));
+                GameObject floor = Prim(PrimitiveType.Plane, "Floor", V(0f, 0f, 0f), new Vector3(1.5f, 1f, 1.5f));
+                GameObject distractor = Prim(PrimitiveType.Cube, "Distractor", V(2.6f, 0.6f, 3f), new Vector3(0.8f, 1.2f, 0.8f));
+                SpatialTarget a = Target(PrimitiveType.Cube, "A", "red cube", V(-1.4f, 1.3f, 3f));
+                SpatialTarget b = Target(PrimitiveType.Sphere, "B", "blue sphere", V(0f, 1.3f, 3f));
+                SpatialTarget c = Target(PrimitiveType.Capsule, "C", "green capsule", V(1.2f, 1.3f, 3f));
 
                 var sysGo = new GameObject("Systems");
                 var sys = sysGo.AddComponent<GazeFocusSystem>();
                 sys.gazeCamera = cam;
                 sys.writeEventLog = false;
                 sys.minFocusSeconds = 0.3f;
+                sys.arenaCenter = FixtureOffset;   // the play area follows the offset fixture (floor at the fixture's y = 0)
                 sys.EnsureInitialized();
+                Vector3 aStart = a.transform.position;
+                Vector3 bStart = b.transform.position, cStart = c.transform.position;
+                Vector3 floorStart = floor.transform.position, distractorStart = distractor.transform.position;
 
                 float t = 0f;
                 // --- focus on each target ---
@@ -159,12 +176,12 @@ namespace Group05.VoiceVR.EditorTools
                       b.CurrentVisualState == SpatialTarget.VisualState.Normal, "only one target shows Focused after switching (previous restored)");
 
                 // --- non-targets ---
-                Aim(cam, new Vector3(0f, 0f, 3f)); sys.Evaluate(t += 0.02f);
+                Aim(cam, V(0f, 0f, 3f)); sys.Evaluate(t += 0.02f);
                 Check(sys.FocusedTarget == null && !sys.Model.HasFocus, "gaze at the floor clears focus (floor is not a target)");
                 Check(c.CurrentVisualState == SpatialTarget.VisualState.Normal, "leaving a target restores its appearance");
-                Aim(cam, new Vector3(2.6f, 0.9f, 3f)); sys.Evaluate(t += 0.02f);
+                Aim(cam, V(2.6f, 0.9f, 3f)); sys.Evaluate(t += 0.02f);
                 Check(sys.FocusedTarget == null, "gaze at a collider without SpatialTarget is not a target");
-                Aim(cam, new Vector3(0f, 8f, 3f)); sys.Evaluate(t += 0.02f);
+                Aim(cam, V(0f, 8f, 3f)); sys.Evaluate(t += 0.02f);
                 Check(sys.FocusedTarget == null, "gaze at empty space clears focus");
 
                 // --- confirmation gating ---
@@ -192,19 +209,76 @@ namespace Group05.VoiceVR.EditorTools
                 CommandResult dup = sys.SubmitParsed(P("select that"), InputModality.KeyboardFallback, "select that", t);
                 Check(dup.Outcome == CommandOutcome.Rejected && dup.Reason == "already_selected" && sys.SelectedTarget == a, "second SELECT while one is selected is rejected");
 
-                // --- not-implemented actions change nothing ---
-                CommandResult mv = sys.SubmitParsed(P("move there"), InputModality.KeyboardFallback, "move there", t);
-                Check(mv.Outcome == CommandOutcome.NotImplemented && sys.SelectedTarget == a && a.transform.position == new Vector3(-1.4f, 1.3f, 3f), "MOVE is NotImplemented and moves nothing");
-                CommandResult rl = sys.SubmitParsed(P("release"), InputModality.KeyboardFallback, "release", t);
-                Check(rl.Outcome == CommandOutcome.NotImplemented && sys.SelectedTarget == a, "RELEASE is NotImplemented and keeps the selection");
+                // --- MOVE (relative): only the selected target moves, one step, relative to the camera (it faces +Z, so right is +X) ---
+                CommandResult mv = sys.SubmitParsed(P("move right"), InputModality.KeyboardFallback, "move right", t);
+                Check(mv.Outcome == CommandOutcome.Executed && mv.Action == CommandAction.MoveRequested && Near(a.transform.position, aStart + new Vector3(0.5f, 0f, 0f)),
+                      "MOVE right steps the selected target 0.5 m to the camera's right");
+                Check(sys.SelectedTarget == a && Near(b.transform.position, bStart) && Near(c.transform.position, cStart) &&
+                      Near(floor.transform.position, floorStart) && Near(distractor.transform.position, distractorStart),
+                      "MOVE moves only the selected target; others, the floor and the distractor stay put");
 
-                // --- cancel ---
+                // --- cancel (also undoes the moves made since SELECT) ---
                 CommandResult cn = sys.SubmitParsed(P("cancel"), InputModality.KeyboardFallback, "cancel", t);
                 Check(cn.Outcome == CommandOutcome.Cancelled && sys.SelectedTarget == null && a.CurrentVisualState == SpatialTarget.VisualState.Normal, "CANCEL clears the selection and restores appearance");
+                Check(Near(a.transform.position, aStart) && !a.HasMovedFromInitial && sys.Model.MovedCount == 0, "CANCEL returns the target to where it was when selected");
                 CommandResult cn2 = sys.SubmitParsed(P("cancel"), InputModality.KeyboardFallback, "cancel", t);
                 Check(cn2.Outcome == CommandOutcome.Rejected && cn2.Reason == "nothing_selected", "CANCEL with nothing selected is rejected harmlessly");
                 CommandResult unk = sys.SubmitParsed(P("make it rain"), InputModality.TextFallback, "make it rain", t);
                 Check(unk.Outcome == CommandOutcome.Rejected, "unknown command is rejected, no exception");
+
+                // --- manipulation: limits, gaze placement, rejections, RELEASE, RESET ---
+                Aim(cam, a.transform.position); sys.Evaluate(t += 0.02f); sys.Evaluate(t += 0.5f);
+                CommandResult reselect = sys.SubmitParsed(P("select that"), InputModality.KeyboardFallback, "select that", t);
+                Check(reselect.Outcome == CommandOutcome.Executed && sys.SelectedTarget == a, "SELECT A again for the manipulation checks");
+
+                CommandResult d1 = sys.SubmitParsed(P("move down"), InputModality.KeyboardFallback, "move down", t);
+                CommandResult d2 = sys.SubmitParsed(P("move down"), InputModality.KeyboardFallback, "move down", t);
+                CommandResult d3 = sys.SubmitParsed(P("move down"), InputModality.KeyboardFallback, "move down", t);
+                Check(d1.Outcome == CommandOutcome.Executed && d2.Outcome == CommandOutcome.Executed && d3.Outcome == CommandOutcome.Executed &&
+                      a.GetBounds().min.y >= FixtureOffset.y - 0.001f && Mathf.Abs(a.transform.position.y - 0.25f) < 0.01f,
+                      "MOVE down is clamped at the floor: the target's bottom never goes below it");
+                CommandResult d4 = sys.SubmitParsed(P("move down"), InputModality.KeyboardFallback, "move down", t);
+                Check(d4.Outcome == CommandOutcome.Rejected && d4.Reason == "at_limit" && Mathf.Abs(a.transform.position.y - 0.25f) < 0.01f,
+                      "MOVE further down is rejected (at_limit) and changes nothing");
+
+                Aim(cam, V(1f, 0f, 2f)); sys.Evaluate(t += 0.02f);
+                CommandResult mg = sys.SubmitParsed(P("move there"), InputModality.KeyboardFallback, "move there", t);
+                Check(mg.Outcome == CommandOutcome.Executed && Near(a.transform.position, V(1f, 0.26f, 2f)),
+                      "MOVE there places the target on the surface under the gaze");
+
+                Vector3 beforeReject = a.transform.position;
+                Aim(cam, b.transform.position); sys.Evaluate(t += 0.02f);
+                CommandResult mo = sys.SubmitParsed(P("move there"), InputModality.KeyboardFallback, "move there", t);
+                Check(mo.Outcome == CommandOutcome.Rejected && mo.Reason == "gaze_on_other_target" && Near(a.transform.position, beforeReject),
+                      "MOVE there while looking at another target is rejected and moves nothing");
+                Aim(cam, V(0f, 8f, 3f)); sys.Evaluate(t += 0.02f);
+                CommandResult mn = sys.SubmitParsed(P("move there"), InputModality.KeyboardFallback, "move there", t);
+                Check(mn.Outcome == CommandOutcome.Rejected && mn.Reason == "no_gaze_point" && Near(a.transform.position, beforeReject),
+                      "MOVE there with nothing under the gaze is rejected and moves nothing");
+                CommandResult mu = sys.SubmitParsed(P("move it to the shelf"), InputModality.TextFallback, "move it to the shelf", t);
+                Check(mu.Outcome == CommandOutcome.Rejected && mu.Reason == "unknown_destination" && Near(a.transform.position, beforeReject),
+                      "MOVE to an unknown named destination is rejected and moves nothing");
+
+                CommandResult rel = sys.SubmitParsed(P("release"), InputModality.KeyboardFallback, "release", t);
+                Check(rel.Outcome == CommandOutcome.Executed && rel.Action == CommandAction.Released && sys.SelectedTarget == null &&
+                      Near(a.transform.position, beforeReject) && a.CurrentVisualState != SpatialTarget.VisualState.Selected,
+                      "RELEASE keeps the target where it is and deselects it");
+                Check(sys.Model.MovedCount == 1 && a.HasMovedFromInitial, "a released, moved target is tracked as moved");
+
+                Aim(cam, b.transform.position); sys.Evaluate(t += 0.02f);
+                CommandResult mvNone = sys.SubmitParsed(P("move right"), InputModality.KeyboardFallback, "move right", t);
+                CommandResult rlNone = sys.SubmitParsed(P("release"), InputModality.KeyboardFallback, "release", t);
+                Check(mvNone.Outcome == CommandOutcome.Rejected && mvNone.Reason == "nothing_selected" && rlNone.Outcome == CommandOutcome.Rejected && Near(a.transform.position, beforeReject),
+                      "MOVE and RELEASE with nothing selected are rejected and move nothing");
+                Check(b.IsFlashing, "a rejected command flashes the focused target");
+
+                CommandResult rst = sys.SubmitParsed(P("reset"), InputModality.KeyboardFallback, "reset", t);
+                Check(rst.Outcome == CommandOutcome.Executed && rst.Action == CommandAction.RestoredInitialState && Near(a.transform.position, aStart) &&
+                      sys.SelectedTarget == null && sys.Model.MovedCount == 0 && !a.HasMovedFromInitial,
+                      "RESET returns the moved target to its start position");
+                Check(Near(b.transform.position, bStart) && Near(c.transform.position, cStart) &&
+                      Near(floor.transform.position, floorStart) && Near(distractor.transform.position, distractorStart),
+                      "after all manipulation the other targets, the floor and the distractor never moved");
 
                 // --- destroyed target ---
                 Aim(cam, c.transform.position); sys.Evaluate(t += 0.02f);
@@ -221,9 +295,12 @@ namespace Group05.VoiceVR.EditorTools
                 // --- missing camera ---
                 if (Camera.main != null)
                 {
-                    // Another scene already provides a MainCamera, so "no camera" cannot be simulated honestly here.
-                    // This is recorded as BLOCKED (never as a pass) and makes the whole run incomplete.
-                    Block("missing camera: no exception, no focus", "a MainCamera already exists in another open scene");
+                    // Another scene already provides a MainCamera, so "no camera" cannot be simulated honestly here: Camera.main is a
+                    // global lookup and the production camera must not be disabled, retagged or removed to make this check run.
+                    // This is recorded as BLOCKED (never as a pass) and makes the whole run incomplete. All other checks use the
+                    // fixture's own camera explicitly. For a complete run use batch mode or a saved scene without a MainCamera.
+                    Block("missing camera: no exception, no focus",
+                          "a MainCamera ('" + Camera.main.name + "' in scene '" + Camera.main.gameObject.scene.name + "') already exists in another open scene");
                 }
                 else
                 {

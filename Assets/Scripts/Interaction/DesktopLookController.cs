@@ -13,6 +13,11 @@ namespace Group05.VoiceVR
         public float keyDegreesPerSecond = 60f;
         public float maxPitch = 80f;
 
+        [Tooltip("Default OFF = unchanged behaviour: desktop look is disabled whenever OpenXR reports an active device. " +
+                 "Turn ON only when no headset is worn but a runtime (e.g. a simulator) makes the device report active; " +
+                 "never leave it ON with a real headset, because it would fight head tracking.")]
+        public bool forceDesktopLook = false;
+
         float yaw, pitch;
         bool initialized;
 
@@ -30,7 +35,7 @@ namespace Group05.VoiceVR
         void Update()
         {
 #if ENABLE_LEGACY_INPUT_MANAGER
-            if (UnityEngine.XR.XRSettings.isDeviceActive) return;
+            if (UnityEngine.XR.XRSettings.isDeviceActive && !forceDesktopLook) return;
             Init();
             float dYaw = 0f, dPitch = 0f;
             if (Input.GetMouseButton(1))
@@ -39,10 +44,13 @@ namespace Group05.VoiceVR
                 dPitch -= Input.GetAxis("Mouse Y") * mouseDegreesPerPixel * 10f;
             }
             float k = keyDegreesPerSecond * Time.unscaledDeltaTime;
-            if (Input.GetKey(KeyCode.LeftArrow)) dYaw -= k;
-            if (Input.GetKey(KeyCode.RightArrow)) dYaw += k;
-            if (Input.GetKey(KeyCode.UpArrow)) dPitch -= k;
-            if (Input.GetKey(KeyCode.DownArrow)) dPitch += k;
+            if (!DesktopVoiceInput.IsTypingText)   // arrow keys move the text cursor while the typed-command box is open
+            {
+                if (Input.GetKey(KeyCode.LeftArrow)) dYaw -= k;
+                if (Input.GetKey(KeyCode.RightArrow)) dYaw += k;
+                if (Input.GetKey(KeyCode.UpArrow)) dPitch -= k;
+                if (Input.GetKey(KeyCode.DownArrow)) dPitch += k;
+            }
             if (dYaw == 0f && dPitch == 0f) return;
             yaw += dYaw;
             pitch = Mathf.Clamp(pitch + dPitch, -maxPitch, maxPitch);

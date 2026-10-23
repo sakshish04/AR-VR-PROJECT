@@ -21,16 +21,37 @@ $intended = @(
     "Assets\Scripts\Interaction\DesktopLookController.cs",
     "Assets\Scripts\Interaction\GazeFocusSystem.cs",
     "Assets\Scripts\Interaction\GazeInteractionModel.cs",
+    "Assets\Scripts\Interaction\HudText.cs",
+    "Assets\Scripts\Interaction\HudTheme.cs",
+    "Assets\Scripts\Interaction\XrHudPanel.cs",
     "Assets\Scripts\Telemetry\FittsMath.cs",
     "Assets\Scripts\Telemetry\GazeEventLog.cs",
+    "Assets\Scripts\Telemetry\VoiceTelemetryCsvWriter.cs",
     "Assets\Scripts\Telemetry\SessionCsvFile.cs",
     "Assets\Scripts\Telemetry\TrialCsvWriter.cs",
     "Assets\Scripts\Telemetry\TrialRecord.cs",
+    "Assets\Scripts\Diagnostics\XRDiagnosticsProbe.cs",
     "Assets\Scripts\Voice\DesktopVoiceInput.cs",
+    "Assets\Scripts\Voice\ExternalRecognizerProtocol.cs",
+    "Assets\Scripts\Voice\VoiceConfidencePolicy.cs",
     "Assets\Scripts\Voice\VoiceIntentParser.cs",
     # Group 05 Editor-only scripts (wrapped in #if UNITY_EDITOR)
     "Assets\Editor\VoiceVRGazeSelfTests.cs",
-    "Assets\Editor\VoiceVRSceneBuilder.cs"
+    "Assets\Editor\VoiceVRSceneBuilder.cs",
+    "Assets\Editor\VoiceVREnvironmentBuilder.cs",
+    "Assets\Editor\VoiceVRXRRigBuilder.cs",
+    "Assets\Editor\VoiceVRAndroidXRSetup.cs",
+    "Assets\Editor\VoiceVRInteractionSdkSetup.cs",
+    "Assets\Editor\VoiceVRLabStationsBuilder.cs",
+    "Assets\Scripts\Lab\LabPlacementRules.cs",
+    "Assets\Scripts\Lab\LabStation.cs",
+    "Assets\Scripts\Lab\LabTaskManager.cs",
+    "Assets\Scripts\MetaXRButtonHandler.cs",
+    "Assets\Editor\CreateMetaAIProviderProfiles.cs",
+    "Assets\Editor\IgnoreWebGLProjectSetupTasks.cs",
+    "Assets\Editor\MetaXRSceneButtonBuilder.cs",
+    "Assets\Editor\MetaXRToolbarButton.cs",
+    "Assets\Editor\RemoveUnusedMetaAIBlocks.cs"
 )
 
 # --- 1. every intended file must exist ---
@@ -76,6 +97,20 @@ foreach ($f in Get-ChildItem $ue -Filter "UnityEngine*.dll") { $refs += "-r:" + 
 foreach ($f in Get-ChildItem $ue -Filter "UnityEditor*.dll") { $refs += "-r:" + $f.FullName }   # Assets/Editor scripts
 $netstdDir = Split-Path $netstd
 foreach ($f in Get-ChildItem $netstdDir -Filter "*.dll") { if ($f.Name -ne "netstandard.dll") { $refs += "-r:" + $f.FullName } }
+
+# VoiceVRXRRigBuilder.cs uses XR Interaction Toolkit / Input System / XR Core Utils types. Those assemblies only exist after Unity has
+# compiled the project once (Library\ScriptAssemblies), so this check needs them and says so instead of failing with 100 type errors.
+# VoiceVRAndroidXRSetup.cs additionally uses XR Management and OpenXR (runtime + editor) types; the package assemblies reference the
+# mscorlib facade, which Unity ships as a type-forwarding shim.
+$refs += "-r:" + (Join-Path $UnityEditorData "NetStandard\compat\2.1.0\shims\netfx\mscorlib.dll")
+foreach ($n in "Unity.XR.Interaction.Toolkit", "Unity.InputSystem", "Unity.XR.CoreUtils", "Unity.XR.Management", "Unity.XR.Management.Editor", "Unity.XR.OpenXR", "Unity.XR.OpenXR.Editor", "UnityEngine.UI") {
+    $p = Join-Path $root ("Library\ScriptAssemblies\" + $n + ".dll")
+    if (-not (Test-Path -LiteralPath $p)) {
+        Write-Host ("REFERENCE ERROR: " + $p + " not found. Open the project in Unity once so it compiles the packages, then re-run.") -ForegroundColor Red
+        exit 3
+    }
+    $refs += "-r:" + $p
+}
 
 # Note: in the Android configurations the Editor scripts compile to nothing (they are wrapped in #if UNITY_EDITOR).
 $configs = @(

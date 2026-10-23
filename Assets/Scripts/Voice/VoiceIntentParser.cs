@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Group05.VoiceVR
 {
@@ -14,7 +15,9 @@ namespace Group05.VoiceVR
         Release,
         Cancel,
         Reset,
-        Help
+        Help,
+        /// <summary>Grab AND carry: the object follows the user until a release / drop command. Appended last so existing numeric values are unchanged.</summary>
+        Grab
     }
 
     /// <summary>
@@ -65,12 +68,21 @@ namespace Group05.VoiceVR
         /// </summary>
         public readonly float ParseScore;
         public readonly string Error;
+        /// <summary>Spoken move distance in metres ("30 centimeters" is 0.3). NaN when none was spoken (the caller then uses its default step).</summary>
+        public readonly float DistanceMeters;
+
+        public bool HasDistance { get { return !float.IsNaN(DistanceMeters); } }
 
         public bool IsActionable { get { return Status == ParseStatus.Ok && Kind != IntentKind.Unknown; } }
 
         public ParsedIntent(ParseStatus status, IntentKind kind, string raw, string normalized, string target,
                             string destination, string direction, float parseScore, string error)
+            : this(status, kind, raw, normalized, target, destination, direction, parseScore, error, float.NaN) { }
+
+        public ParsedIntent(ParseStatus status, IntentKind kind, string raw, string normalized, string target,
+                            string destination, string direction, float parseScore, string error, float distanceMeters)
         {
+            DistanceMeters = distanceMeters;
             Status = status;
             Kind = kind;
             RawText = raw;
@@ -88,6 +100,7 @@ namespace Group05.VoiceVR
                    + (TargetName != null ? ", target=" + TargetName : "")
                    + (DestinationName != null ? ", dest=" + DestinationName : "")
                    + (Direction != null ? ", dir=" + Direction : "")
+                   + (HasDistance ? ", distance=" + DistanceMeters.ToString("0.###", CultureInfo.InvariantCulture) + " m" : "")
                    + (Error != null ? ", error=" + Error : "") + ")";
         }
     }
@@ -103,11 +116,12 @@ namespace Group05.VoiceVR
         private static readonly HashSet<string> Fillers = new HashSet<string>
         {
             "please", "um", "uh", "hey", "okay", "ok", "now", "just", "kindly", "can", "could", "you", "would", "will",
-            "i", "want", "to", "like", "need", "let", "me", "lets", "the", "a", "an", "it", "that", "this", "those", "these", "one"
+            "i", "want", "to", "like", "need", "let", "me", "lets", "the", "a", "an", "it", "that", "this", "those", "these", "one", "by"
         };
 
-        // Deictic words that mean "use the gaze" rather than naming an object.
-        private static readonly HashSet<string> Deictic = new HashSet<string> { "that", "this", "it", "there", "here", "those", "these", "one", "over" };
+        // Deictic words that mean "use the gaze" rather than naming an object. "target" is generic ("select target" is a KeywordGrammar phrase):
+        // without it the parser read "target" as an object NAME, and every real target ("blue sphere") then failed with target_mismatch.
+        private static readonly HashSet<string> Deictic = new HashSet<string> { "that", "this", "it", "there", "here", "those", "these", "one", "over", "target", "object", "thing", "item" };
 
         private static readonly HashSet<string> NegationWords = new HashSet<string>
         {
@@ -123,6 +137,11 @@ namespace Group05.VoiceVR
 
         private static readonly Vocabulary[] Vocabularies =
         {
+            // Grab = select + carry. These are LONGER than the Select words they contain ("grab", "pick up") and the Move word "carry",
+            // so the subsumption rule below picks Grab; plain "grab this" / "pick up the cube" still mean Select.
+            new Vocabulary(IntentKind.Grab,
+                "grab this object", "grab that object", "grab the object", "carry this object", "carry that object", "carry the object",
+                "pick up this object", "pick up that object", "pick up the object"),
             new Vocabulary(IntentKind.Help,
                 "what can i say", "what do i say", "what can i do", "what commands", "which commands",
                 "list commands", "show commands", "help", "commands", "instructions"),
@@ -211,6 +230,8 @@ namespace Group05.VoiceVR
                     "Ambiguous command not executed: '" + norm + "'. Give one action at a time.");
 
             IntentKind kind = kept[0].Kind;
+            string[] words = tokens;
+            float distance = float.NaN;
             // Longest matching phrase of that kind anchors name extraction.
             string anchor = kept[0].Phrase;
             foreach (Match m in kept) if (m.Phrase.Length > anchor.Length) anchor = m.Phrase;
@@ -218,15 +239,94 @@ namespace Group05.VoiceVR
             string direction = null, target = null, destination = null;
             if (kind == IntentKind.Move)
             {
-                direction = FindDirection(tokens);
-                ExtractMoveNames(tokens, anchor, out target, out destination);
+                distance = ExtractDistance(text, tokens, out words);   // "30 centimeters", "0.5 m", "thirty centimeters", "half a meter"
+                direction = FindDirection(words);
+                ExtractMoveNames(words, anchor, out target, out destination);
             }
             else if (kind == IntentKind.Select || kind == IntentKind.Focus)
             {
                 target = ExtractWordsAfter(tokens, anchor);
             }
 
-            return new ParsedIntent(ParseStatus.Ok, kind, text, norm, target, destination, direction, ComputeParseScore(tokens), null);
+            return new ParsedIntent(ParseStatus.Ok, kind, text, norm, target, destination, direction, ComputeParseScore(words), null, distance);
+        }
+
+        // ---- spoken distances ----
+
+        private static readonly Regex DigitDistance = new Regex(
+            @"(?<![\w.,])(\d+(?:[.,]\d+)?)\s*(millimet(?:er|re)s?|centimet(?:er|re)s?|met(?:er|re)s?|mm|cm|m)\b",
+            RegexOptions.CultureInvariant);
+
+        private static readonly Dictionary<string, int> NumberWords = new Dictionary<string, int>
+        {
+            { "zero", 0 }, { "one", 1 }, { "two", 2 }, { "three", 3 }, { "four", 4 }, { "five", 5 }, { "six", 6 }, { "seven", 7 }, { "eight", 8 },
+            { "nine", 9 }, { "ten", 10 }, { "eleven", 11 }, { "twelve", 12 }, { "thirteen", 13 }, { "fourteen", 14 }, { "fifteen", 15 },
+            { "sixteen", 16 }, { "seventeen", 17 }, { "eighteen", 18 }, { "nineteen", 19 }, { "twenty", 20 }, { "thirty", 30 }, { "forty", 40 },
+            { "fifty", 50 }, { "sixty", 60 }, { "seventy", 70 }, { "eighty", 80 }, { "ninety", 90 }
+        };
+
+        private static float UnitMeters(string unit)
+        {
+            if (unit.StartsWith("milli") || unit == "mm") return 0.001f;
+            if (unit.StartsWith("centi") || unit == "cm") return 0.01f;
+            return 1f;
+        }
+
+        private static bool IsUnitWord(string t)
+        {
+            return t == "cm" || t == "mm" || t.StartsWith("centimet") || t.StartsWith("millimet") || t == "meter" || t == "meters" || t == "metre" || t == "metres";
+        }
+
+        /// <summary>
+        /// Finds a spoken distance and returns it in metres (NaN if none). <paramref name="remaining"/> is the token list WITHOUT the distance words,
+        /// so numbers and units are never mistaken for an object name. Digits are read from the raw text because normalisation drops the decimal point.
+        /// </summary>
+        private static float ExtractDistance(string raw, string[] tokens, out string[] remaining)
+        {
+            remaining = tokens;
+            string lower = (raw ?? string.Empty).ToLowerInvariant();
+            System.Text.RegularExpressions.Match m = DigitDistance.Match(lower);
+            if (m.Success)
+            {
+                double v;
+                if (double.TryParse(m.Groups[1].Value.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out v))
+                {
+                    string rest = lower.Remove(m.Index, m.Length).Insert(m.Index, " ");
+                    string normRest = Normalize(rest);
+                    remaining = normRest.Length == 0 ? new string[0] : normRest.Split(' ');
+                    return (float)(v * UnitMeters(m.Groups[2].Value));
+                }
+            }
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                if (!IsUnitWord(tokens[i])) continue;
+                int start = i;
+                double value = double.NaN;
+                if (i >= 1 && tokens[i - 1] == "half") { start = i - 1; value = 0.5; }
+                else if (i >= 2 && tokens[i - 1] == "a" && tokens[i - 2] == "half") { start = i - 2; value = 0.5; }
+                else
+                {
+                    int s = i;
+                    while (s - 1 >= 0 && (NumberWords.ContainsKey(tokens[s - 1]) || tokens[s - 1] == "hundred")) s--;
+                    if (s < i)
+                    {
+                        int current = 0;
+                        for (int k = s; k < i; k++)
+                        {
+                            if (tokens[k] == "hundred") current = (current == 0 ? 1 : current) * 100;
+                            else current += NumberWords[tokens[k]];
+                        }
+                        start = s;
+                        value = current;
+                    }
+                }
+                if (double.IsNaN(value)) continue;
+                var rem = new List<string>();
+                for (int k = 0; k < tokens.Length; k++) if (k < start || k > i) rem.Add(tokens[k]);
+                remaining = rem.ToArray();
+                return (float)(value * UnitMeters(tokens[i]));
+            }
+            return float.NaN;
         }
 
         private struct Match
@@ -320,22 +420,48 @@ namespace Group05.VoiceVR
         /// <summary>Short list shown to the user for HELP.</summary>
         public static readonly string[] SupportedPhrases =
         {
-            "select that", "grab this", "move there", "move left", "move right", "release", "cancel",
-            "reset", "what is this", "what can I say"
+            "select that", "grab this", "move there", "move left", "move right", "move up", "move down",
+            "move forward", "move back", "release", "cancel", "reset", "what is this", "what can I say",
+            "move left thirty centimeters", "grab this object", "drop this object"
         };
 
         /// <summary>
         /// Exact phrases for a keyword-style recognizer (which can only return phrases it was given).
         /// Every entry must parse to an actionable intent; a standalone test enforces this.
         /// </summary>
-        public static readonly string[] KeywordGrammar =
+        public static readonly string[] KeywordGrammar = BuildKeywordGrammar();
+
+        private static string[] BuildKeywordGrammar()
         {
-            "select that", "select target", "grab this",
-            "move there", "move to gaze", "move left", "move right",
-            "release", "drop it",
-            "cancel", "reset", "focus", "what is this",
-            "help", "what can I say"
-        };
+            var g = new List<string>
+            {
+                "select that", "select target", "grab this",
+                "move there", "move to gaze", "move left", "move right",
+                "move up", "move down", "move forward", "move back",
+                "release", "drop it",
+                "cancel", "reset", "focus", "what is this",
+                "help", "what can I say",
+                // Longer natural alternatives. In the session logs the recognizer delivered "drop it" 7 times and the one-word "release"
+                // never, and one-word commands (cancel 2, reset 3) were rare: short single words are weak keyword-recognizer targets.
+                // Each parses to the SAME intent as its short form (the standalone grammar test enforces it).
+                "release it", "let go", "put it down",
+                "cancel that", "never mind",
+                "start over", "select this",
+                // Grab and carry: the object follows you until you drop it.
+                "grab this object", "carry this object", "pick up this object", "drop this object"
+            };
+            // Quantified moves. A keyword recognizer can only return phrases it was given, so the distances are an explicit list, spoken as
+            // words (digits are unreliable for a keyword grammar). "move left" with no distance keeps the default step.
+            string[] dirs = { "left", "right", "up", "down" };
+            string[] amounts = { "ten centimeters", "twenty centimeters", "thirty centimeters", "forty centimeters", "fifty centimeters", "one meter" };
+            foreach (string d in dirs)
+                foreach (string a in amounts)
+                {
+                    g.Add("move " + d + " " + a);
+                    g.Add("move this object " + a + " to the " + d);
+                }
+            return g.ToArray();
+        }
 
         /// <summary>Canonical phrase sent by each numbered fallback key (1..7). Fallback is simulated input, not speech.</summary>
         public static readonly string[] FallbackKeyPhrases =
