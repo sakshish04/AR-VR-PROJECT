@@ -254,6 +254,8 @@ Statuses are defined at the top of this file. **No row is CONFIRMED.** The same 
 
 **The Phase 04 documents are complete; Phase 04 is BLOCKED on external approvals and is not closed.** Done: research question and outcomes, hypotheses, conditions, tasks with parameters and trial counts, design and counterbalancing, participant and consent requirements (as a checklist), instruments, the Fitts formula conflict (documented, not resolved), analysis plan, data integrity and provenance rules, pilot plan, and the decision register entries. Not done because only the professor can do it: every row marked PENDING PROFESSOR APPROVAL above.
 
+**Supporting materials drafted 2026-10-24** (`docs/phase04_materials/`, all marked DRAFT, none approved): participant information sheet, consent form, background questionnaire, session script and checklists (including the pilot checklist), the counterbalancing sheet (20 enrolment slots), and the analysis plan. These cover the practical content of exit criteria 2, 4 and 5 below; they still need the professor's decisions, the ethics wording (`[TO BE FILLED]` markers) and approval before use. No participant, trial or result exists.
+
 Exit criteria for closing Phase 04:
 1. Every decision in section 11 is CONFIRMED by the professor (not merely proposed by us) and recorded in `docs/DECISION_REGISTER.md` with the date — in particular D-02 (formula conflict), D-05/D-05a (population and the accessibility question), Q-02 (is T2 needed) and Q-07 (sample size and ethics).
 2. Protocol v1.0 written from this draft with the chosen values, and the consent form, information sheet and questionnaire set drafted.
