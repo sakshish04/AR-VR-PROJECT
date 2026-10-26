@@ -21,6 +21,7 @@ namespace Meta.WitAi.Dictation.Events
         public UnityEngine.Events.UnityEvent<string> OnPartialTranscription = new UnityEngine.Events.UnityEvent<string>();
         public UnityEngine.Events.UnityEvent OnStoppedListening = new UnityEngine.Events.UnityEvent();
         public UnityEngine.Events.UnityEvent<string, string> OnError = new UnityEngine.Events.UnityEvent<string, string>();
+        public UnityEngine.Events.UnityEvent<float> OnMicLevelChanged = new UnityEngine.Events.UnityEvent<float>();
     }
 }
 namespace Oculus.Voice.Dictation
@@ -31,5 +32,25 @@ namespace Oculus.Voice.Dictation
         public bool Active { get { return false; } }
         public void Activate() { }
         public void Deactivate() { }
+        public Meta.WitAi.Configuration.WitDictationRuntimeConfiguration RuntimeDictationConfiguration { get; set; }
+        public bool UsePlatformIntegrations { get; set; }
+        public bool DoNotFallbackToWit { get; set; }
     }
+}
+namespace Meta.WitAi.Data.Configuration
+{
+    public class WitConfiguration : UnityEngine.ScriptableObject
+    {
+        public void SetClientAccessToken(string token) { }
+    }
+}
+namespace Meta.WitAi.Configuration
+{
+    public class WitRuntimeConfiguration { public Meta.WitAi.Data.Configuration.WitConfiguration witConfiguration; }
+    public class WitDictationRuntimeConfiguration : WitRuntimeConfiguration { public Oculus.Voice.Dictation.Configuration.DictationConfiguration dictationConfiguration; }
+}
+
+namespace Oculus.Voice.Dictation.Configuration
+{
+    public class DictationConfiguration { public bool multiPhrase; }
 }

@@ -35,6 +35,18 @@ namespace Group05.VoiceVR
         [Tooltip("Preview the panel in the plain desktop view too (it is normally XR-only).")]
         public bool showOnDesktop = false;
 
+        const int HudFontSize = 64;
+        // Every printable ASCII character (32..126) plus the ellipsis and arrow the HUD may use.
+        static readonly string AtlasCharacters = BuildAtlasCharacters();
+
+        static string BuildAtlasCharacters()
+        {
+            var sb = new StringBuilder();
+            for (char c = (char)32; c <= (char)126; c++) sb.Append(c);
+            sb.Append((char)0x2026).Append((char)0x2192);
+            return sb.ToString();
+        }
+
         const int MaxChars = 42;
         const float UpdateInterval = 0.2f;
         const int RowCount = 6;
@@ -88,6 +100,13 @@ namespace Group05.VoiceVR
             root.SetParent(transform, false);
 
             Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (font != null)
+            {
+                // On the headset (Android) the dynamic font atlas was rebuilt while the first texts were being drawn, which left the glyphs jumbled. Put every character the
+                // HUD can show into the atlas up front, and re-set the texts whenever the atlas is rebuilt anyway.
+                font.RequestCharactersInTexture(AtlasCharacters, HudFontSize, FontStyle.Normal);
+                Font.textureRebuilt += OnFontTextureRebuilt;
+            }
             for (int i = 0; i < RowCount; i++)
             {
                 var go = new GameObject("Row" + i);
@@ -97,7 +116,7 @@ namespace Group05.VoiceVR
                 if (font != null) { tm.font = font; mr.sharedMaterial = font.material; }
                 tm.anchor = TextAnchor.UpperCenter;
                 tm.alignment = TextAlignment.Center;
-                tm.fontSize = 96;   // raster size only: Calibrate() rescales the panel to lineHeightMeters, so a larger glyph atlas just means sharper text
+                tm.fontSize = HudFontSize;   // raster size only: Calibrate() rescales the panel to lineHeightMeters, so a larger glyph atlas just means sharper text
                 tm.characterSize = 0.1f;
                 tm.text = "";
                 mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -131,8 +150,21 @@ namespace Group05.VoiceVR
             Debug.Log("[XrHudPanel] created. It stays hidden on the desktop and shows only while an XR device is active (XRSettings.isDeviceActive).");
         }
 
+        void OnFontTextureRebuilt(Font changed)
+        {
+            // Regenerate the text meshes against the new atlas so no row keeps stale glyph coordinates.
+            for (int i = 0; i < RowCount; i++)
+            {
+                if (rows[i] == null) continue;
+                string t = rows[i].text;
+                rows[i].text = "";
+                rows[i].text = t;
+            }
+        }
+
         void OnDestroy()
         {
+            Font.textureRebuilt -= OnFontTextureRebuilt;
             if (Instance == this) Instance = null;
             if (backgroundMaterial != null) Destroy(backgroundMaterial);
         }

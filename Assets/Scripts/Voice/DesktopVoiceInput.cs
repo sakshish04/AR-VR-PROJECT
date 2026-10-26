@@ -634,6 +634,13 @@ namespace Group05.VoiceVR
 #endif
         }
 
+        /// <summary>Shows a message from an external recogniser in the HUD status line.</summary>
+        public void ExternalStatusMessage(string message)
+        {
+            StatusMessage = message;
+            transientStatusUntil = Time.realtimeSinceStartup + 10f;
+        }
+
         /// <summary>Lets an external recogniser show its state in the HUD (it replaces the "no recogniser on this platform" notice).</summary>
         public void ExternalListeningChanged(bool listening, string engineName)
         {

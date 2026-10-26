@@ -49,3 +49,7 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# Wit.ai client token for Quest voice (keep out of git)
+Assets/Resources/wit_client_token.txt
+Assets/Resources/wit_client_token.txt.meta
