@@ -35,6 +35,7 @@ $intended = @(
     "Assets\Scripts\Voice\ExternalRecognizerProtocol.cs",
     "Assets\Scripts\Voice\VoiceConfidencePolicy.cs",
     "Assets\Scripts\Voice\VoiceIntentParser.cs",
+    "Assets\Scripts\Voice\QuestVoiceInput.cs",
     # Group 05 Editor-only scripts (wrapped in #if UNITY_EDITOR)
     "Assets\Editor\VoiceVRGazeSelfTests.cs",
     "Assets\Editor\VoiceVRSceneBuilder.cs",
@@ -46,6 +47,14 @@ $intended = @(
     "Assets\Scripts\Lab\LabPlacementRules.cs",
     "Assets\Scripts\Lab\LabStation.cs",
     "Assets\Scripts\Lab\LabTaskManager.cs",
+    "Assets\Scripts\Trials\FittsTrialPlan.cs",
+    "Assets\Scripts\Trials\TrialEngine.cs",
+    "Assets\Scripts\Trials\LiveTrialManager.cs",
+    "Assets\Scripts\Trials\OvrControllerReader.cs",
+    "Assets\Editor\VoiceVRLiveTrialSetup.cs",
+    "Assets\Editor\VoiceVRVoiceCheck.cs",
+    "Assets\Editor\VoiceVRQuestVoiceSetup.cs",
+    "Assets\Editor\VoiceVRVoiceEngineMenu.cs",
     "Assets\Scripts\MetaXRButtonHandler.cs",
     "Assets\Editor\CreateMetaAIProviderProfiles.cs",
     "Assets\Editor\IgnoreWebGLProjectSetupTasks.cs",
@@ -81,7 +90,8 @@ if ($actual.Count -ne $intended.Count) {
     exit 3
 }
 
-$sources = $intended | ForEach-Object { Join-Path $root $_ }
+$sources = @($intended | ForEach-Object { Join-Path $root $_ })
+$sources += (Join-Path $PSScriptRoot "OvrStub.cs")   # stand-in for OVRInput (Meta XR Core SDK), compile check only
 Write-Host ("Intended list validated: {0} source files, all present, none unlisted." -f $sources.Count)
 Write-Host "Compiling exactly these files:"
 $intended | ForEach-Object { Write-Host "  $_" }

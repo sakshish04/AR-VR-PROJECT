@@ -39,15 +39,15 @@ Nothing in the **Approval gates** section has been executed. Meta/Unity version-
 
 ## 1a. Phase 04 study-design decisions — status (2026-10-23)
 
-Statuses: **CONFIRMED** = approved by the professor with date; **PROPOSED** = the project owner's current proposal, not approved; **PENDING PROFESSOR APPROVAL** = cannot be treated as settled until the professor decides; **UNRESOLVED** = nobody has decided. **No row below is CONFIRMED.** Detail and reasoning: `docs/ROADMAP_PHASE04_RESEARCH_PROTOCOL.md` §11.
+Statuses: **CONFIRMED** = approved by the professor with date; **WORKING DECISION** = the project owner decided to proceed (dated), not approved by the professor; **PROPOSED** = the project owner's current proposal, not approved; **PENDING PROFESSOR APPROVAL** = cannot be treated as settled until the professor decides; **UNRESOLVED** = nobody has decided. **No row below is CONFIRMED.** Detail and reasoning: `docs/ROADMAP_PHASE04_RESEARCH_PROTOCOL.md` §11.
 
 | ID | Position in the Phase 04 draft | Status |
 |---|---|---|
-| D-02 | Shannon `log2(D/W+1)` proposed; dossier `log2(2D/W)` documented; neither chosen. Data stores raw D, W and MT so either can be recomputed | PROPOSED (Shannon); **conflict, PENDING PROFESSOR APPROVAL** |
+| D-02 | **WORKING DECISION (owner, 2026-10-25, reaffirmed 2026-10-26): Shannon `log2(D/W+1)`**; dossier `log2(2D/W)` documented; professor confirmation pending. Data stores raw D, W and MT so either can be recomputed | WORKING DECISION; **conflict, PENDING PROFESSOR APPROVAL** |
 | D-03 | keep raw MT; floor only for throughput | UNRESOLVED (suggestion) |
 | D-04 | C1 controller vs C2 gaze+voice; every participant does both; AB/BA | PROPOSED |
-| D-05 | able-bodied volunteers only available; dossier N ≥ 10 (16–20 recommended) | **PENDING PROFESSOR APPROVAL** |
-| D-05a | options (a)/(b)/(c); none chosen | **PENDING PROFESSOR APPROVAL** |
+| D-05 | mostly able-bodied volunteers plus participants with motor impairment where available; dossier N ≥ 10 (16–20 recommended); sample size and ethics not assumed | population: WORKING DECISION (2026-10-25); **professor approval and ethics PENDING** |
+| D-05a | accessibility framing kept, every claim limited to the sample; motor-impaired results separate and descriptive (options in protocol §1) | WORKING DECISION (2026-10-25); **PENDING PROFESSOR APPROVAL** |
 | D-06 | no gaze-dwell unless required | PROPOSED (professor may overrule) |
 | D-08 | prompted-phrase accuracy; WER only with free speech | UNRESOLVED (suggestion) |
 | D-09 | keep the offline keyword recogniser | UNRESOLVED (suggestion) |
@@ -58,7 +58,7 @@ Statuses: **CONFIRMED** = approved by the professor with date; **PROPOSED** = th
 | Q-04 | seated; simulator for development | UNRESOLVED (suggestion) |
 | Q-05 | none | UNRESOLVED |
 | Q-06 | pseudonymous IDs; team sessions never participant data | PROPOSED (enforced in code) |
-| Q-07 | not assumed | **PENDING PROFESSOR APPROVAL** |
+| Q-07 | sample size: N = 10 (owner, 2026-10-26; dossier minimum, no power calculation); ethics route not assumed | sample size: WORKING DECISION; **professor approval and ethics PENDING** |
 
 ## 2. Approval gates (nothing below has been done)
 

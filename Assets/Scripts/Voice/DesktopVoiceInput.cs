@@ -110,6 +110,32 @@ namespace Group05.VoiceVR
                  "If the helper cannot start, the Unity recognizer is used and the status says so.")]
         public RecognizerRoute recognizerRoute = RecognizerRoute.Auto;
 
+        public enum HelperAudioSource
+        {
+            /// <summary>Unity captures the microphone (the device chosen in the dropdown) and streams it to the speech engine. Measured to give a clean signal.</summary>
+            UnityMicrophone,
+            /// <summary>The speech engine opens the Windows default microphone itself (older path; recognized far less reliably on the test laptop).</summary>
+            WindowsDefault
+        }
+
+        public enum HelperEngine
+        {
+            /// <summary>Windows Runtime speech recognizer (Windows.Media.SpeechRecognition): what Unity's own recognizer uses, and what recognised the developers' voices well. Built on first use.</summary>
+            WindowsRuntime,
+            /// <summary>The older System.Speech desktop engine (PowerShell script). Scored real voices much lower on the test laptop.</summary>
+            SystemSpeech
+        }
+
+        [Tooltip("Which speech engine runs inside the helper process. WindowsRuntime is the same engine family as Unity's own recognizer; SystemSpeech is the older fallback. " +
+                 "WindowsRuntime listens to the Windows default microphone itself (the dropdown and the gain settings below only apply to SystemSpeech).")]
+        public HelperEngine helperEngine = HelperEngine.WindowsRuntime;
+
+        [Tooltip("Where the speech helper gets its audio. UnityMicrophone uses the device chosen in the dropdown; WindowsDefault lets Windows' own capture path feed the engine.")]
+        public HelperAudioSource helperAudioSource = HelperAudioSource.UnityMicrophone;
+        [Tooltip("OFF by default: in the first live check automatic gain made the engine report the signal as 'TooNoisy' (the gain swings when speech starts). Only switch on if the engine keeps reporting 'TooQuiet'.")]
+        public bool helperAutoGainEnabled = false;
+        [Range(1f, 12f)] public float helperMaxGain = 6f;
+
         [Header("Headset / Meta XR Simulator")]
         [Tooltip("When an XR device (Quest, Meta XR Simulator) becomes active, start the microphone once automatically. In the simulator the Unity window " +
                  "does not have keyboard focus, so F9 cannot be pressed there.")]
@@ -156,6 +182,32 @@ namespace Group05.VoiceVR
         readonly ConcurrentQueue<string> helperLines = new ConcurrentQueue<string>();
         bool usingHelper;
         bool xrRouteSwitchTried;
+        AudioClip helperMicClip;
+        string helperMicDevice;
+        int helperReadPos;
+        float helperEnvelope;
+        System.Threading.Thread helperWriter;
+        readonly ConcurrentQueue<byte[]> helperAudioQueue = new ConcurrentQueue<byte[]>();
+        readonly System.Threading.AutoResetEvent helperAudioSignal = new System.Threading.AutoResetEvent(false);
+        volatile bool helperWriterRun;
+        bool helperFedByUnity;
+        // live diagnostics: what the microphone and the speech engine are doing, visible on the HUD and written to a small log file
+        float helperPeakWindow, helperLevelNow, helperDiagNextAt, helperDiagStartedAt;
+        long helperBytesSent;
+        int helperEvPhrases, helperEvHeard, helperEvProblems;
+        string helperLastProblem = "";
+        string helperLastHypothesis = "";
+        bool helperIsWinRt;
+        float helperStoppedAt = -100f;
+        int engineMode;
+        bool helperReadySeen;
+        float helperStartedAt;
+        bool winRtUnusable;   // the Windows Runtime engine never answered in this Unity session (seen with an XR runtime active): use System.Speech fed by Unity's microphone
+        int helperClipFreq = 16000;
+        long helperSampleCounter;
+        float[] helperTail = new float[0];
+        static float[] helperFir;
+        int helperEvHypotheses;
         const string HelperPlatformSuffix = "/SystemSpeech";
 #endif
 
@@ -418,6 +470,7 @@ namespace Group05.VoiceVR
             UpdateXrControls();
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
             PumpHelper();
+            KeepUnityRecognizerAlive();
 #endif
             IsTypingText = textBoxOpen && enableKeyboardFallback;
             if (transientStatusUntil > 0f && Time.realtimeSinceStartup > transientStatusUntil)
@@ -426,6 +479,28 @@ namespace Group05.VoiceVR
                 if (State == VoiceInputState.Listening) StatusMessage = "Listening. Say one of the grammar phrases.";
             }
 #if ENABLE_LEGACY_INPUT_MANAGER
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+            if (Input.GetKeyDown(KeyCode.F10))
+            {
+                // Pick whichever engine hears you best, live, in the same session: 1 = Windows engine in a helper process (works while the simulator is focused),
+                // 2 = older engine fed with Unity's microphone, 3 = Unity's own recognizer (needs the Unity window focused).
+                engineMode = (engineMode + 1) % 3;
+                if (engineMode == 0) { recognizerRoute = RecognizerRoute.SystemSpeechHelper; helperEngine = HelperEngine.WindowsRuntime; winRtUnusable = false; }
+                else if (engineMode == 1) { recognizerRoute = RecognizerRoute.SystemSpeechHelper; helperEngine = HelperEngine.SystemSpeech; }
+                else recognizerRoute = RecognizerRoute.UnityKeywordRecognizer;
+                StopListening();
+                StartListening();
+                StatusMessage = "Voice engine " + (engineMode + 1) + "/3 (F10 switches): " + (engineMode == 0 ? "Windows engine in a helper" : engineMode == 1 ? "older engine with Unity's microphone" : "Unity recognizer (Unity window must be focused)") + ".";
+            }
+            if (Input.GetKeyDown(KeyCode.F11))
+            {
+                // Compare the two recognizers in the same session: F11 switches between the speech helper and Unity's own recognizer.
+                recognizerRoute = usingHelper ? RecognizerRoute.UnityKeywordRecognizer : RecognizerRoute.SystemSpeechHelper;
+                StopListening();
+                StartListening();
+                StatusMessage = "Voice route: " + (usingHelper ? "speech helper (works while the simulator is focused)" : "Unity recognizer (needs the Unity window focused)") + ". " + StatusMessage;
+            }
+#endif
             if (Input.GetKeyDown(toggleListeningKey))
             {
                 // A recognizer that stopped behind our back leaves State at Listening (the bar then says "MIC STOPPED ... press F9 to restart").
@@ -543,6 +618,29 @@ namespace Group05.VoiceVR
 #endif
         }
 
+        /// <summary>
+        /// Entry for a recogniser that lives outside this component (the Quest headset's dictation, see <see cref="QuestVoiceInput"/>): the text goes through the same
+        /// judge/execute/log path as Windows speech. Dictation gives no per-phrase confidence, so the phrase is treated as Medium; text that matches no command is
+        /// reported by the parser exactly like any other unmatched utterance.
+        /// </summary>
+        public void SubmitExternalTranscription(string text, string platformSuffix)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return;
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+            HandleRecognizedPhrase(text, 1, "Medium", float.NaN, platformSuffix ?? "");
+#else
+            // Android: the command executes through Submit; voice-CSV rows for the headset are not written yet (see docs/QUEST_VOICE.md).
+            Submit(text, InputModality.Voice, "Medium", float.NaN);
+#endif
+        }
+
+        /// <summary>Lets an external recogniser show its state in the HUD (it replaces the "no recogniser on this platform" notice).</summary>
+        public void ExternalListeningChanged(bool listening, string engineName)
+        {
+            State = listening ? VoiceInputState.Listening : VoiceInputState.Idle;
+            StatusMessage = listening ? "Listening (" + engineName + "). Say a command." : "Microphone off.";
+        }
+
         public void StopListening()
         {
 #if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
@@ -652,6 +750,7 @@ namespace Group05.VoiceVR
         {
             get
             {
+                if (externalAttached) return ExternalEngineAlive();
                 try { return helperProcess != null && !helperProcess.HasExited; }
                 catch (Exception) { return false; }
             }
@@ -667,10 +766,52 @@ namespace Group05.VoiceVR
                 string grammar = System.IO.Path.Combine(Application.temporaryCachePath, "voicevr_grammar.txt");
                 System.IO.File.WriteAllLines(grammar, VoiceIntentParser.KeywordGrammar, new System.Text.UTF8Encoding(false));
 
+                // Give the operating system a moment to release the microphone after the previous engine process ended.
+                float sinceStop = Time.realtimeSinceStartup - helperStoppedAt;
+                if (sinceStop >= 0f && sinceStop < 2.5f) System.Threading.Thread.Sleep((int)((2.5f - sinceStop) * 1000f));
+                // An engine started BEFORE Play mode (Group05 > VoiceVR > Start Voice Engine) keeps hearing through Play, while an engine launched during Play often hears
+                // nothing; if one is running, listen to its output instead of starting another.
+                if (helperEngine == HelperEngine.WindowsRuntime && TryAttachExternalEngine())
+                {
+                    helperIsWinRt = true; helperFedByUnity = false; helperReadySeen = true; usingHelper = true;
+                    UnityEngine.Debug.Log("[DesktopVoiceInput] attached to the voice engine that was started before Play mode (it listens to the Windows default microphone).");
+                    return true;
+                }
+                string winRtExe = null, winRtWhy = "";
+                helperIsWinRt = false;
+                helperReadySeen = false; helperStartedAt = Time.realtimeSinceStartup;
+                // With an XR runtime active (Meta XR Simulator / headset) the Windows Runtime engine starts but hears nothing (verified 2026-10-26), so use the engine that takes Unity's own microphone audio there.
+                if (helperEngine == HelperEngine.WindowsRuntime && !winRtUnusable)
+                {
+                    if (TryPrepareWinRtHelperStatic(out winRtExe, out winRtWhy)) helperIsWinRt = true;
+                    else UnityEngine.Debug.LogWarning("[DesktopVoiceInput] Windows Runtime speech helper unavailable (" + winRtWhy + "); using the System.Speech helper instead.");
+                }
+
+                // Audio source: Unity's own microphone capture (clean signal) streamed to the engine, or the engine's own Windows capture.
+                bool useUnityMic = !helperIsWinRt && helperAudioSource == HelperAudioSource.UnityMicrophone && Microphone.devices.Length > 0;
+                if (useUnityMic)
+                {
+                    string dev = string.IsNullOrEmpty(SelectedMicDevice) ? null : SelectedMicDevice;
+                    // Capture at 48 kHz where the device allows it and convert to 16 kHz here with a proper low-pass filter. Letting Unity resample straight to 16 kHz
+                    // folds high frequencies back into the speech band, and the recognizer scored real voices far lower than clean test audio.
+                    int fmin, fmax;
+                    Microphone.GetDeviceCaps(dev, out fmin, out fmax);
+                    helperClipFreq = (fmax == 0 || (48000 >= fmin && 48000 <= fmax)) ? 48000 : 16000;
+                    helperMicClip = Microphone.Start(dev, true, 2, helperClipFreq);
+                    helperSampleCounter = 0; helperTail = new float[0];
+                    if (helperMicClip == null) { useUnityMic = false; UnityEngine.Debug.LogWarning("[DesktopVoiceInput] Unity could not open the microphone; the helper will use the Windows default capture."); }
+                    else { helperMicDevice = dev; helperReadPos = 0; helperEnvelope = 0f; }
+                }
+                helperFedByUnity = useUnityMic;
+
                 var psi = new ProcessStartInfo
                 {
-                    FileName = "powershell.exe",
-                    Arguments = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"" + script + "\" -GrammarFile \"" + grammar + "\" -ParentPid " + Process.GetCurrentProcess().Id,
+                    FileName = helperIsWinRt ? winRtExe : "powershell.exe",
+                    Arguments = helperIsWinRt
+                        ? "-GrammarFile \"" + grammar + "\" -ParentPid " + Process.GetCurrentProcess().Id
+                        : "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"" + script + "\" -GrammarFile \"" + grammar + "\" -ParentPid " + Process.GetCurrentProcess().Id
+                                + (useUnityMic ? " -AudioSource stdin" : " -AudioSource default"),
+                    RedirectStandardInput = useUnityMic,
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
@@ -684,6 +825,9 @@ namespace Group05.VoiceVR
                 if (!proc.Start()) { why = "process did not start"; return false; }
                 proc.BeginOutputReadLine();
                 proc.BeginErrorReadLine();
+                if (useUnityMic) StartHelperWriter(proc);
+                UnityEngine.Debug.Log("[DesktopVoiceInput] speech helper engine: " + (helperIsWinRt ? "Windows Runtime" : "System.Speech") + "; audio source: "
+                                      + (useUnityMic ? "Unity microphone '" + (helperMicDevice ?? "default") + "'" : "Windows default capture"));
                 helperProcess = proc;
                 usingHelper = true;
                 return true;
@@ -696,19 +840,375 @@ namespace Group05.VoiceVR
             }
         }
 
+        float nextKeepAlive;
+        int keepAliveRestarts;
+
+        /// <summary>
+        /// Unity's recognizer runs inside the (signed) Unity process, so Windows' app control never blocks it, but Unity shuts its phrase system down when the Unity window loses focus
+        /// (for example when the Meta XR Simulator window is in front). While listening, check once a second and start it again if it was stopped.
+        /// </summary>
+        void KeepUnityRecognizerAlive()
+        {
+            if (usingHelper || recognizer == null || State != VoiceInputState.Listening) return;
+            if (Time.realtimeSinceStartup < nextKeepAlive) return;
+            nextKeepAlive = Time.realtimeSinceStartup + 1f;
+            try
+            {
+                if (PhraseRecognitionSystem.Status != SpeechSystemStatus.Running) { PhraseRecognitionSystem.Restart(); keepAliveRestarts++; }
+                if (!recognizer.IsRunning) { recognizer.Start(); keepAliveRestarts++; }
+            }
+            catch (Exception ex) { UnityEngine.Debug.LogWarning("[DesktopVoiceInput] could not keep the recognizer running: " + ex.Message); }
+        }
+
+        // ---- speech engine started before Play mode (see StartExternalEngine) ----
+        bool externalAttached;
+        long externalPos;
+
+        static string ExternalDir { get { return System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, "..", "Library", "VoiceHelper")); } }
+        static string ExternalOutFile { get { return System.IO.Path.Combine(ExternalDir, "external_out.txt"); } }
+        static string ExternalPidFile { get { return System.IO.Path.Combine(ExternalDir, "external.pid"); } }
+
+        public static bool ExternalEngineAlive()
+        {
+            try
+            {
+                if (!System.IO.File.Exists(ExternalPidFile)) return false;
+                int pid = int.Parse(System.IO.File.ReadAllText(ExternalPidFile).Trim());
+                Process p = Process.GetProcessById(pid);
+                return !p.HasExited && p.ProcessName.IndexOf("WinRtSpeechHelper", StringComparison.OrdinalIgnoreCase) >= 0;
+            }
+            catch (Exception) { return false; }
+        }
+
+        bool TryAttachExternalEngine()
+        {
+            if (!ExternalEngineAlive()) return false;
+            try { externalPos = System.IO.File.Exists(ExternalOutFile) ? new System.IO.FileInfo(ExternalOutFile).Length : 0; }
+            catch (Exception) { externalPos = 0; }
+            externalAttached = true;
+            return true;
+        }
+
+        void ReadExternal()
+        {
+            try
+            {
+                string f = ExternalOutFile;
+                if (!System.IO.File.Exists(f)) return;
+                using (var fs = new System.IO.FileStream(f, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.ReadWrite))
+                {
+                    if (fs.Length < externalPos) externalPos = 0;
+                    if (fs.Length == externalPos) return;
+                    fs.Seek(externalPos, System.IO.SeekOrigin.Begin);
+                    var buf = new byte[fs.Length - externalPos];
+                    int n = fs.Read(buf, 0, buf.Length);
+                    int last = Array.LastIndexOf(buf, (byte)'\n', n - 1);
+                    if (last < 0) return;                       // no complete line yet
+                    externalPos += last + 1;
+                    string text = new System.Text.UTF8Encoding(false).GetString(buf, 0, last + 1);
+                    foreach (string line in text.Split('\n')) { string t = line.TrimEnd('\r'); if (t.Length > 0) helperLines.Enqueue(t); }
+                }
+            }
+            catch (Exception) { /* try again next frame */ }
+        }
+
+        /// <summary>
+        /// Starts the Windows Runtime speech engine as an independent process that outlives Play mode and writes what it hears to Library/VoiceHelper/external_out.txt.
+        /// Menu: Group05 > VoiceVR > Start Voice Engine (do this BEFORE pressing Play). Returns a message for the user.
+        /// </summary>
+        public static string StartExternalEngine()
+        {
+            try
+            {
+                string exe, why;
+                if (!TryPrepareWinRtHelperStatic(out exe, out why)) return "Could not build the engine: " + why;
+                StopExternalEngine();
+                System.IO.Directory.CreateDirectory(ExternalDir);
+                string grammar = System.IO.Path.Combine(ExternalDir, "external_grammar.txt");
+                System.IO.File.WriteAllLines(grammar, VoiceIntentParser.KeywordGrammar, new System.Text.UTF8Encoding(false));
+                try { System.IO.File.Delete(ExternalOutFile); } catch (Exception) { }
+                // cmd.exe (signed by Windows) redirects the engine's output into a file; the engine program itself is the unchanged, already-allowed build.
+                var psi = new ProcessStartInfo
+                {
+                    FileName = Environment.GetEnvironmentVariable("ComSpec") ?? "cmd.exe",
+                    Arguments = "/c \"\"" + exe + "\" -GrammarFile \"" + grammar + "\" -ParentPid " + Process.GetCurrentProcess().Id + " > \"" + ExternalOutFile + "\" 2>&1\"",
+                    UseShellExecute = false, CreateNoWindow = true
+                };
+                Process cmd = Process.Start(psi);
+                if (cmd == null) return "The engine did not start.";
+                System.Threading.Thread.Sleep(1500);
+                Process engine = null;
+                foreach (Process q in Process.GetProcessesByName("WinRtSpeechHelper")) { engine = q; break; }
+                if (engine == null) return "The engine program did not start (Windows may have blocked it: see the Console).";
+                System.IO.File.WriteAllText(ExternalPidFile, engine.Id.ToString());
+                return "Voice engine started (process " + engine.Id + "). Now press Play; the project attaches to it automatically.";
+            }
+            catch (Exception ex) { return "Could not start the engine: " + ex.Message; }
+        }
+
+        public static string StopExternalEngine()
+        {
+            try
+            {
+                if (System.IO.File.Exists(ExternalPidFile))
+                {
+                    int pid = int.Parse(System.IO.File.ReadAllText(ExternalPidFile).Trim());
+                    try { Process p = Process.GetProcessById(pid); if (p.ProcessName.IndexOf("WinRtSpeechHelper", StringComparison.OrdinalIgnoreCase) >= 0) { p.Kill(); p.WaitForExit(2000); } } catch (Exception) { }
+                    System.IO.File.Delete(ExternalPidFile);
+                }
+                return "Voice engine stopped.";
+            }
+            catch (Exception ex) { return "Could not stop the engine: " + ex.Message; }
+        }
+
+        // Compiles Tools/VoiceHelper/WinRtSpeechHelper.cs with the C# compiler that ships with Windows (nothing to install) into Library/VoiceHelper, when missing or older than the source.
+        static bool TryPrepareWinRtHelperStatic(out string exePath, out string why)
+        {
+            exePath = null; why = "";
+            try
+            {
+                string src = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, "..", "Tools", "VoiceHelper", "WinRtSpeechHelper.cs"));
+                if (!System.IO.File.Exists(src)) { why = "source not found: " + src; return false; }
+                string dir = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, "..", "Library", "VoiceHelper"));
+                System.IO.Directory.CreateDirectory(dir);
+                string exe = System.IO.Path.Combine(dir, "WinRtSpeechHelper.exe");
+                bool fresh = System.IO.File.Exists(exe) && System.IO.File.GetLastWriteTimeUtc(exe) >= System.IO.File.GetLastWriteTimeUtc(src);
+                if (!fresh)
+                {
+                    string win = Environment.GetEnvironmentVariable("windir") ?? "C:\\Windows";
+                    string fw = System.IO.Path.Combine(win, "Microsoft.NET", "Framework64", "v4.0.30319");
+                    string csc = System.IO.Path.Combine(fw, "csc.exe");
+                    string wm = System.IO.Path.Combine(win, "System32", "WinMetadata");
+                    if (!System.IO.File.Exists(csc)) { why = "the Windows C# compiler was not found at " + csc; return false; }
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = csc,
+                        Arguments = "-nologo -out:\"" + exe + "\" -r:\"" + System.IO.Path.Combine(wm, "Windows.Media.winmd") + "\" -r:\"" + System.IO.Path.Combine(wm, "Windows.Foundation.winmd")
+                                    + "\" -r:\"" + System.IO.Path.Combine(wm, "Windows.Globalization.winmd") + "\" -r:\"" + System.IO.Path.Combine(fw, "System.Runtime.dll")
+                                    + "\" -r:\"" + System.IO.Path.Combine(fw, "System.Runtime.InteropServices.WindowsRuntime.dll") + "\" \"" + src + "\"",
+                        UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true
+                    };
+                    using (Process c = Process.Start(psi))
+                    {
+                        string output = c.StandardOutput.ReadToEnd() + c.StandardError.ReadToEnd();
+                        if (!c.WaitForExit(60000)) { try { c.Kill(); } catch (Exception) { } why = "the helper build timed out"; return false; }
+                        if (c.ExitCode != 0 || !System.IO.File.Exists(exe)) { why = "the helper build failed: " + output; return false; }
+                    }
+                    UnityEngine.Debug.Log("[DesktopVoiceInput] built the Windows Runtime speech helper: " + exe);
+                }
+                exePath = exe;
+                return true;
+            }
+            catch (Exception ex) { why = ex.Message; return false; }
+        }
+
         void StopHelper()
         {
+            if (externalAttached) { externalAttached = false; usingHelper = false; return; }   // the externally started engine keeps running
             usingHelper = false;
+            StopHelperWriter();
             if (helperProcess == null) return;
             try { if (!helperProcess.HasExited) helperProcess.Kill(); } catch (Exception) { }
+            // Wait until the old engine process is really gone: a Windows Runtime engine started while the previous one still holds the microphone starts normally
+            // ("ready") but then hears nothing (seen 2026-10-26: it worked right after Play and stayed deaf after every restart).
+            try { helperProcess.WaitForExit(2000); } catch (Exception) { }
             try { helperProcess.Dispose(); } catch (Exception) { }
             helperProcess = null;
+            helperStoppedAt = Time.realtimeSinceStartup;
         }
 
         // Runs on the main thread (called from Update): the helper's lines arrive on a reader thread and are queued, so no Unity API is touched off-thread.
+        // ---- Unity microphone -> speech helper (16 kHz, 16-bit, mono PCM on the helper's stdin) ----
+
+        void StartHelperWriter(Process proc)
+        {
+            while (helperAudioQueue.TryDequeue(out _)) { }
+            helperWriterRun = true;
+            helperWriter = new System.Threading.Thread(() =>
+            {
+                try
+                {
+                    System.IO.Stream stdin = proc.StandardInput.BaseStream;
+                    byte[] chunk;
+                    while (helperWriterRun)
+                    {
+                        helperAudioSignal.WaitOne(200);
+                        while (helperWriterRun && helperAudioQueue.TryDequeue(out chunk)) { stdin.Write(chunk, 0, chunk.Length); }
+                        stdin.Flush();
+                    }
+                }
+                catch (Exception) { /* the helper ended: Update notices that the process is gone */ }
+            });
+            helperWriter.IsBackground = true;
+            helperWriter.Start();
+        }
+
+        void StopHelperWriter()
+        {
+            helperWriterRun = false;
+            helperAudioSignal.Set();
+            if (helperMicClip != null)
+            {
+                try { Microphone.End(helperMicDevice); } catch (Exception) { }
+                helperMicClip = null;
+            }
+            helperWriter = null;
+            helperFedByUnity = false;
+        }
+
+        // 15-tap Hamming-windowed sinc low-pass, cutoff about 7 kHz at 48 kHz, for a clean 3:1 decimation to 16 kHz.
+        static float[] FirTaps()
+        {
+            if (helperFir != null) return helperFir;
+            const int taps = 15;
+            var h = new float[taps];
+            double fc = 7000.0 / 48000.0, sum = 0.0;
+            for (int k = 0; k < taps; k++)
+            {
+                double x = k - (taps - 1) / 2.0;
+                double sinc = Math.Abs(x) < 1e-9 ? 2.0 * fc : Math.Sin(2.0 * Math.PI * fc * x) / (Math.PI * x);
+                double w = 0.54 - 0.46 * Math.Cos(2.0 * Math.PI * k / (taps - 1));
+                h[k] = (float)(sinc * w);
+                sum += h[k];
+            }
+            for (int k = 0; k < taps; k++) h[k] = (float)(h[k] / sum);
+            helperFir = h;
+            return h;
+        }
+
+        void FeedHelperAudio()
+        {
+            if (!helperFedByUnity || helperMicClip == null) return;
+            int total = helperMicClip.samples;
+            int pos = Microphone.GetPosition(helperMicDevice);
+            if (pos < 0 || pos == helperReadPos) return;
+            int n = pos - helperReadPos;
+            if (n < 0) n += total;
+            if (n > helperClipFreq) { helperReadPos = pos; helperTail = new float[0]; return; }   // fell far behind (a long frame): skip rather than send stale audio
+
+            var raw = new float[n];
+            int first = Mathf.Min(n, total - helperReadPos);
+            var part = new float[first];
+            helperMicClip.GetData(part, helperReadPos);
+            Array.Copy(part, 0, raw, 0, first);
+            if (first < n)
+            {
+                var rest = new float[n - first];
+                helperMicClip.GetData(rest, 0);
+                Array.Copy(rest, 0, raw, first, n - first);
+            }
+            helperReadPos = pos;
+
+            // to 16 kHz
+            float[] samples;
+            if (helperClipFreq == 48000)
+            {
+                float[] fir = FirTaps();
+                int hist = fir.Length - 1;
+                var ext = new float[helperTail.Length + n];
+                Array.Copy(helperTail, 0, ext, 0, helperTail.Length);
+                Array.Copy(raw, 0, ext, helperTail.Length, n);
+                var outList = new System.Collections.Generic.List<float>(n / 3 + 1);
+                for (int i = 0; i < n; i++)
+                {
+                    long g = helperSampleCounter + i;
+                    if (g % 3 != 0) continue;
+                    int e = helperTail.Length + i;          // index of the newest sample in ext
+                    if (e - hist < 0) { outList.Add(raw[i]); continue; }
+                    float acc = 0f;
+                    for (int k = 0; k < fir.Length; k++) acc += fir[k] * ext[e - k];
+                    outList.Add(acc);
+                }
+                helperSampleCounter += n;
+                int keep = Math.Min(ext.Length, hist);
+                var tail = new float[keep];
+                Array.Copy(ext, ext.Length - keep, tail, 0, keep);
+                helperTail = tail;
+                samples = outList.ToArray();
+            }
+            else samples = raw;
+            int m = samples.Length;
+            if (m == 0) return;
+
+            float gain = 1f;
+            float peak = 0f;
+            for (int i = 0; i < m; i++) { float a2 = Mathf.Abs(samples[i]); if (a2 > peak) peak = a2; }
+            helperPeakWindow = Mathf.Max(helperPeakWindow, peak);
+            helperLevelNow = Mathf.Max(peak, helperLevelNow * 0.9f);
+            if (helperAutoGainEnabled)
+            {
+                helperEnvelope = Mathf.Max(peak, helperEnvelope * 0.995f);
+                gain = Mathf.Clamp(0.30f / Mathf.Max(helperEnvelope, 0.02f), 1f, helperMaxGain);
+            }
+            var bytes = new byte[m * 2];
+            for (int i = 0; i < m; i++)
+            {
+                float v = Mathf.Clamp(samples[i] * gain, -0.98f, 0.98f);
+                short s16 = (short)Mathf.RoundToInt(v * 32767f);
+                bytes[2 * i] = (byte)(s16 & 0xFF);
+                bytes[2 * i + 1] = (byte)((s16 >> 8) & 0xFF);
+            }
+            helperBytesSent += bytes.Length;
+            helperAudioQueue.Enqueue(bytes);
+            helperAudioSignal.Set();
+        }
+
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+        /// <summary>Read-only live numbers for the Voice Check editor tool: microphone level (0..1, decaying peak) and what the speech engine has reported.</summary>
+        public float HelperMicLevel { get { return helperLevelNow; } }
+        public int HelperPhraseCount { get { return helperEvPhrases; } }
+        public int HelperHeardNoMatchCount { get { return helperEvHeard; } }
+        public int HelperProblemCount { get { return helperEvProblems; } }
+        public string HelperLastProblem { get { return helperLastProblem; } }
+        public string HelperLastHypothesis { get { return helperLastHypothesis; } }
+        public int HelperHypothesisCount { get { return helperEvHypotheses; } }
+        public bool HelperRunning { get { return usingHelper && HelperAlive; } }
+        /// <summary>True when Unity itself captures the microphone for the helper (so HelperMicLevel is meaningful); false for the Windows Runtime engine, which listens to the microphone itself.</summary>
+        public bool HelperMicLevelAvailable { get { return helperFedByUnity; } }
+        public string HelperEngineName { get { return helperIsWinRt ? "Windows Runtime" : "System.Speech"; } }
+        /// <summary>Clears the counters (Voice Check calls this before it listens).</summary>
+        public void ResetHelperCounters() { helperEvPhrases = 0; helperEvHeard = 0; helperEvProblems = 0; helperEvHypotheses = 0; helperLastProblem = ""; helperLastHypothesis = ""; helperPeakWindow = 0f; helperLevelNow = 0f; }
+#endif
+
+        // One line every 2 s into telemetry/selftest/voice_mic_diag.log: microphone peak, how much audio reached the engine, and what the engine reported.
+        void WriteHelperDiag()
+        {
+            float now = Time.realtimeSinceStartup;
+            if (now < helperDiagNextAt) return;
+            helperDiagNextAt = now + 2f;
+            try
+            {
+                string dir = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, "..", "telemetry", "selftest"));
+                System.IO.Directory.CreateDirectory(dir);
+                string line = DateTime.UtcNow.ToString("HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture)
+                    + " source=" + (helperIsWinRt ? "winrt_default_mic" : helperFedByUnity ? "unity_mic" : "windows_default")
+                    + " micPeak2s=" + helperPeakWindow.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture)
+                    + " bytesSent=" + helperBytesSent + " helperAlive=" + HelperAlive + " focused=" + Application.isFocused
+                    + " phrases=" + helperEvPhrases + " heardNoMatch=" + helperEvHeard + " hypotheses=" + helperEvHypotheses + (helperLastHypothesis.Length > 0 ? " lastHyp='" + helperLastHypothesis + "'" : "") + " problems=" + helperEvProblems + (helperLastProblem.Length > 0 ? " lastProblem=" + helperLastProblem : "");
+                System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "voice_mic_diag.log"), line + "\n");
+            }
+            catch (Exception) { /* diagnostics must never disturb the interaction */ }
+            helperPeakWindow = 0f;
+        }
+
         void PumpHelper()
         {
             if (!usingHelper) return;
+            if (externalAttached) ReadExternal();
+            // The Windows Runtime engine can hang while starting when an XR runtime (the Meta XR Simulator) is active and never reports READY. Do not leave the user
+            // staring at "Starting the speech engine": after 6 s switch to the System.Speech engine fed by Unity's own microphone, which works in that situation.
+            if (helperIsWinRt && !helperReadySeen && Time.realtimeSinceStartup - helperStartedAt > 6f)
+            {
+                UnityEngine.Debug.LogWarning("[DesktopVoiceInput] Windows Runtime speech engine did not start within 6 s; switching to the System.Speech engine with Unity's microphone.");
+                winRtUnusable = true;
+                StopHelper();
+                string whyFallback;
+                if (!TryStartHelper(out whyFallback)) { StatusMessage = "Speech helper could not start: " + whyFallback; State = VoiceInputState.Error; return; }
+                StatusMessage = "Starting the speech engine (fallback)...";
+                return;
+            }
+            FeedHelperAudio();
+            WriteHelperDiag();
             string line;
             int handled = 0;
             while (handled < 8 && helperLines.TryDequeue(out line))
@@ -718,23 +1218,45 @@ namespace Group05.VoiceVR
                 switch (m.Kind)
                 {
                     case ExternalRecognizerProtocol.Kind.Ready:
+                        helperReadySeen = true;
                         StatusMessage = "Listening. Say one of the grammar phrases.";
                         UnityEngine.Debug.Log("[DesktopVoiceInput] speech helper ready (engine " + m.Text + "); it hears you even while another window has focus.");
                         break;
                     case ExternalRecognizerProtocol.Kind.Phrase:
                         if (FocusDiagnostics)
                             UnityEngine.Debug.Log("[VoiceFocusDiag] recognition callback (helper) " + DiagStamp() + " confidence=" + m.Confidence.ToString("F3", System.Globalization.CultureInfo.InvariantCulture));
+                        helperEvPhrases++;
                         int rank = ExternalRecognizerProtocol.RankFromConfidence(m.Confidence);
                         HandleRecognizedPhrase(m.Text, rank, ExternalRecognizerProtocol.RankName(rank),
                                                ExternalRecognizerProtocol.SinceSpeechEndMs(m, DateTime.UtcNow), HelperPlatformSuffix);
                         break;
+                    case ExternalRecognizerProtocol.Kind.Hypothesis:
+                        helperEvHypotheses++;
+                        helperLastHypothesis = m.Text + " (" + m.Confidence.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + ")";
+                        break;
+                    case ExternalRecognizerProtocol.Kind.Problem:
+                        helperEvProblems++;
+                        helperLastProblem = m.Text;
+                        StatusMessage = ExternalRecognizerProtocol.ProblemAdvice(m.Text);
+                        transientStatusUntil = Time.realtimeSinceStartup + 6f;
+                        UnityEngine.Debug.Log("[DesktopVoiceInput] speech helper: audio problem " + m.Text);
+                        break;
                     case ExternalRecognizerProtocol.Kind.Heard:
+                        helperEvHeard++;
+                        // A "rejected" guess that still matches a command is accepted as a Low-confidence phrase: the engine only ever picks from our fixed list, and in a
+                        // noisy room or with a quiet voice many correct phrases are scored below its own threshold.
+                        if (!string.IsNullOrEmpty(m.Text) && VoiceIntentParser.Parse(m.Text).Status == ParseStatus.Ok)
+                        {
+                            HandleRecognizedPhrase(m.Text, 2, "Low", float.NaN, HelperPlatformSuffix);
+                            break;
+                        }
                         // Speech was detected but matched no command: say so (and log it), otherwise a failure looks identical to "not listening".
                         StatusMessage = m.Text.Length > 0
                             ? "Heard something like '" + m.Text + "' but it did not match a command. Say it again, clearly."
                             : "Heard speech but could not match a command. Say it again, clearly.";
                         transientStatusUntil = Time.realtimeSinceStartup + 6f;
-                        UnityEngine.Debug.Log("[DesktopVoiceInput] speech helper: heard speech, no match (best guess '" + m.Text + "')");
+                        UnityEngine.Debug.Log("[DesktopVoiceInput] speech helper: heard speech, no match (best guess '" + m.Text + "', score "
+                                              + (float.IsNaN(m.Confidence) ? "n/a" : m.Confidence.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)) + ")");
                         break;
                     case ExternalRecognizerProtocol.Kind.Error:
                         State = VoiceInputState.Error;
@@ -821,6 +1343,7 @@ namespace Group05.VoiceVR
             Vector2 v = HudTheme.Begin();
             DrawStatusBar(v);
             DrawMicDropdown();
+            DrawMicLevel();
             if (guiTextBox) DrawTypedTextBox(v);
             HudTheme.End();
         }
@@ -867,6 +1390,18 @@ namespace Group05.VoiceVR
                 HudTheme.Chip(new Rect(bar.xMax - 12f - chipW, bar.y + 10f, chipW, bar.height - 20f),
                               chipText, voice ? HudTheme.Cyan : HudTheme.Warn, HudTheme.FontSmall);
             }
+        }
+
+        // Live microphone level (only meaningful on the helper route, where Unity captures the audio): shows at once whether your voice reaches the program.
+        void DrawMicLevel()
+        {
+#if UNITY_STANDALONE_WIN || UNITY_EDITOR_WIN
+            if (!guiListening || !usingHelper || !helperFedByUnity) return;
+            var r = new Rect(400f, 66f, 190f, 14f);
+            float f = Mathf.Clamp01(helperLevelNow * 4f);
+            HudTheme.Bar(r, f, f > 0.9f ? HudTheme.Warn : HudTheme.Success);
+            HudTheme.Label(new Rect(r.xMax + 8f, r.y - 4f, 150f, 20f), "mic level", HudTheme.FontSmall, HudTheme.TextDim, false, TextAnchor.MiddleLeft);
+#endif
         }
 
         // Microphone device dropdown, directly under the status bar (left). Click the header to open it.

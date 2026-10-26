@@ -270,7 +270,10 @@ namespace Group05.VoiceVR
             }
             // Row 5: the lab task (docks): progress, and where the looked-at / selected item belongs
             LabTaskManager lab = LabTaskManager.Instance;
-            if (lab != null && lab.Total > 0)
+            LiveTrialManager trials = LiveTrialManager.Instance;
+            if (trials != null && trials.IsRunning)
+                SetRow(5, "TRIALS: " + trials.StatusLine(), HudTheme.Warn);
+            else if (lab != null && lab.Total > 0)
                 SetRow(5, "LAB " + LabPlacementRules.Progress(lab.PlacedCount, lab.Total) + ": " + lab.StatusLine(), lab.Completed ? HudTheme.Success : HudTheme.Info);
             else SetRow(5, "", HudTheme.TextDim);
             Layout();

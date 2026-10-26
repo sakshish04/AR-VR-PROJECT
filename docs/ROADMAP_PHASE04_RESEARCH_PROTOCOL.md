@@ -1,6 +1,6 @@
 # Roadmap Phase 04 — Research Protocol and Experiment Design
 
-**Status: PROTOCOL DRAFT v0.3 (2026-10-23), complete as a document, NOT approved.** Every section is written out, but the decisions that make it a usable study protocol belong to the professor and have not been given. No participant has been recruited, no session run, and no study result exists. Nothing in this file is evidence. Every number is a proposal, a placeholder, or marked "measured" with its source.
+**Status: PROTOCOL DRAFT v0.4 (2026-10-25), complete as a document, NOT approved.** Every section is written out, but the decisions that make it a usable study protocol belong to the professor and have not been given. The project owner has recorded WORKING DECISIONS on 2026-10-25 (Fitts formula, participant mix); these let the project proceed but are **not** the professor's approval. No participant has been recruited, no session run, and no study result exists. Nothing in this file is evidence. Every number is a proposal, a placeholder, or marked "measured" with its source.
 
 Roadmap position: Phase 04 of the agreed sequence (0 audit, 1 core interaction, 2 voice reliability, 3 voice telemetry CSV, **4 research protocol**, 5 live trial manager and Fitts' telemetry, 6 analysis pipeline, 7 XR input and integration, 8 UI polish, 9 documentation). Phase 05 and later do not start until this protocol is approved.
 
@@ -16,6 +16,7 @@ Every decision in this file carries one of these labels. **No decision is CONFIR
 |---|---|
 | **CONFIRMED** | approved by the professor (or the responsible authority), with the date and where it is recorded |
 | **PROPOSED** | the project owner's current proposal; the team stands behind it for now, but it is not approved |
+| **WORKING DECISION** | the project owner has decided to go ahead with this for all project work (code, data files, documents); it is recorded with its date, is **not** approved by the professor, and must be confirmed or reversed by the professor. Used only where the owner explicitly decided |
 | **PENDING PROFESSOR APPROVAL** | cannot be treated as settled until the professor decides; work that depends on it must wait or be marked provisional |
 | **UNRESOLVED** | nobody has decided; options or defaults are only suggestions |
 
@@ -24,13 +25,13 @@ Summary of the project owner's current position (2026-10-23):
 | # | Decision | Status |
 |---|---|---|
 | 1 | Compare controller interaction against gaze + voice; every participant does **both** conditions (within-subject) | PROPOSED |
-| 2 | Participant population: able-bodied volunteers only (no participants with motor impairment are available) | **PENDING PROFESSOR APPROVAL** |
-| 2b | Any change to the original accessibility research question that follows from point 2 | **PENDING PROFESSOR APPROVAL** |
+| 2 | Participant population: **mostly able-bodied volunteers**; participants with motor impairment are welcome where they can be recruited, but are expected to be few | **WORKING DECISION** (owner, 2026-10-25); professor approval and ethics review of including participants with motor impairment still **PENDING** |
+| 2b | Research-question framing with a mostly able-bodied sample plus a few motor-impaired participants | **WORKING DECISION**: keep the accessibility framing but limit every claim to what the sample supports (section 1); **PENDING PROFESSOR APPROVAL** |
 | 3 | No gaze-dwell third condition, unless the professor requires it | PROPOSED (the professor may overrule) |
 | 4 | Lab docking task (T2) kept, but **provisional** until its necessity is confirmed | PROPOSED, provisional |
-| 5 | Fitts' Law Index of Difficulty: Shannon form `ID = log2(D/W + 1)` | PROPOSED, **conflicts with the dossier** (see section 7.2); needs confirmation |
+| 5 | Fitts' Law Index of Difficulty: Shannon form `ID = log2(D/W + 1)` | **WORKING DECISION** (owner, 2026-10-25, on my recommendation, see 7.2); **conflicts with the dossier**, so professor confirmation is still needed |
 | 6 | Participants identified only by pseudonymous IDs (P01, P02, ...); the developers' own test sessions are never presented as participant data | PROPOSED (rule already enforced in code and in section 9) |
-| 7 | Sample size and ethics requirements | **PENDING PROFESSOR APPROVAL** (nothing assumed) |
+| 7 | Sample size and ethics requirements | sample size N = 10: WORKING DECISION (owner, 2026-10-26); ethics: **PENDING PROFESSOR APPROVAL** |
 
 All other items below (order of conditions, trial counts, questionnaires, session length, analysis details, and so on) are PROPOSED or UNRESOLVED as labelled where they appear.
 
@@ -55,7 +56,7 @@ Phase 03 is closed with those limits recorded in `docs/ROADMAP_PHASE03_VOICE_TEL
 
 Working question for this study (PROPOSED): *Does voice-driven spatial interaction (gaze to point, voice to act) let users acquire and place virtual objects faster, with fewer failures and with less workload than a handheld controller, in a simulated lab?*
 
-**Accessibility framing — PENDING PROFESSOR APPROVAL.** The authorised title is about **motor-impaired** users. The only participants available are able-bodied. With able-bodied participants the study can compare the two interaction methods, but it **cannot support claims about users with motor impairment**, and the title is faculty-authorised, so changing it is the professor's decision. The options, in order of how much they change the question: (a) keep the framing and recruit participants with motor impairment (not currently possible); (b) keep the framing but describe the able-bodied study as a first, preliminary step, with every claim limited to able-bodied users and accessibility listed as future work; (c) reword the question to interaction performance in general. This file does not choose between them, and no title, abstract or claim should be changed until the professor does (D-05a).
+**Accessibility framing — WORKING DECISION (2026-10-25), PENDING PROFESSOR APPROVAL (D-05a).** The authorised title is about **motor-impaired** users. The sample will be **mostly able-bodied volunteers**, with **some participants with motor impairment** where they can be recruited (expected to be few). Working position: keep the accessibility framing, but every claim must match the sample. (i) The comparison of the two interaction methods is reported for the able-bodied group. (ii) Results from participants with motor impairment are reported **separately and descriptively** (individual or small-group results; no statistical test across groups unless the numbers genuinely support one). (iii) Reports say plainly that the evidence for motor-impaired users comes only from those few participants. (iv) Nothing from the able-bodied data is presented as evidence that the system reduces failure for motor-impaired users. This is option (b) below, extended with a small motor-impaired subgroup. The title is faculty-authorised, so whether this framing is acceptable, and any wording change, is the professor's decision; and the ethics route has to cover recruiting participants with motor impairment (section 5). Options as originally listed: (a) keep the framing and recruit mainly participants with motor impairment (not currently possible); (b) keep the framing but describe the able-bodied study as a first, preliminary step, with every claim limited to able-bodied users and accessibility listed as future work; (c) reword the question to interaction performance in general.
 
 Outcomes (PROPOSED, UNRESOLVED until the professor agrees them; Q-01):
 
@@ -125,8 +126,8 @@ PROPOSED (not approved): **within-subject, C1 vs C2, AB/BA counterbalanced**, wi
 
 **Everything in this section is PENDING PROFESSOR APPROVAL.** The items are what has to be settled with the professor and the institution **before** anyone is recruited; nothing here is assumed or approved.
 
-- **Population — PENDING PROFESSOR APPROVAL (D-05, D-05a).** Currently available: able-bodied volunteers only. No participants with motor impairment are available. Consequence: results can describe able-bodied users only, and the accessibility claims in the authorised title and the project abstract cannot be supported by this sample (see section 1). Whether an able-bodied-only study is acceptable, and how the research question and wording change, is the professor's decision.
-- **Sample size — PENDING PROFESSOR APPROVAL (Q-07).** The dossier (§4) states "Minimum N ≥ 10 real people (your PBL dossier recommends N = 16–20)", with voluntary adult participants, written consent and anonymised IDs (P01, P02...). Whether that applies to an able-bodied study, and a justification (effect size, power), are not settled. No sample size is claimed or assumed here. A power calculation needs an effect-size estimate; the only honest source is a pilot, and the guide's and blueprint's numbers are not usable (section 1).
+- **Population — WORKING DECISION (2026-10-25); PENDING PROFESSOR APPROVAL and ethics review (D-05, D-05a).** Mostly able-bodied volunteers, plus participants with motor impairment where available (expected few). Consequences: (1) the two-method comparison rests on the able-bodied group; (2) motor-impaired participants are analysed and reported separately and descriptively; (3) group membership is **self-reported, optional** health-related information, recorded only if the ethics board allows it (background questionnaire question 10 is the only place; without it every participant is analysed as one group); (4) recruiting participants with motor impairment needs extra care that must be part of the ethics submission: an accessible information sheet and consent (large print, read aloud, a person of their choice present), a session that can be adapted (seating, breaks, longer time limits where needed, using only the condition they can use), no pressure to complete either condition, and a clear right to stop; (5) every adaptation is recorded in the notes column and never silently dropped from the data. Whether this participant mix is acceptable, and how the research question and wording change, is the professor's decision.
+- **Sample size — WORKING DECISION N = 10 (owner, 2026-10-26); professor approval PENDING (Q-07).** N = 10 is the dossier's minimum; it is not backed by a power calculation, so the report must say so and show confidence intervals. The text below predates this decision. The dossier (§4) states "Minimum N ≥ 10 real people (your PBL dossier recommends N = 16–20)", with voluntary adult participants, written consent and anonymised IDs (P01, P02...). Whether that applies to an able-bodied study, and a justification (effect size, power), are not settled. No sample size is claimed or assumed here. A power calculation needs an effect-size estimate; the only honest source is a pilot, and the guide's and blueprint's numbers are not usable (section 1).
 - **Ethics — PENDING PROFESSOR APPROVAL (Q-07).** Which board or procedure applies (approval or a written exemption), and its requirements, must be confirmed by the professor before recruiting.
 - Inclusion/exclusion (UNRESOLVED suggestion): adult (the dossier requires adult participants), normal or corrected vision, fluent in the command language, no condition that makes VR unsafe (for example photosensitive epilepsy, severe motion sickness history); recorded by the experimenter, not stored with names.
 - Compensation, if any, and recruitment route (UNRESOLVED, Q-05).
@@ -197,10 +198,10 @@ The dossier's check was made directly in the file on 2026-10-23. The two forms g
 | 2.0 | 0.15 | 13.33 | 3.84 | 4.74 | 0.90 |
 | 2.0 | 0.08 | 25.00 | 4.70 | 5.64 | 0.94 |
 
-Position, stated without choosing: **PROPOSED** (project owner) is the Shannon form, as in the guide and the ISO 9241-9 literature; the dossier's form is the faculty-supplied document, which also marks its own formula as unverified. **Neither is chosen here.** Until the professor confirms:
+Decision and status: **WORKING DECISION (project owner, 2026-10-25): use the Shannon form `ID = log2(D/W + 1)`** for all project work. Reasons: it is the form of the ISO 9241-9 formulation the project guide cites (guide §1.1: "ISO 9241-9 standard Shannon formulation"); it is what `FittsMath` already implements and tests; and it behaves sensibly at small D/W (it is never negative and is 0 only when D = 0), whereas `log2(2D/W)` is 0 at D = W/2 and **negative** when D is smaller than W/2. (I recommended the Shannon form to the owner on that basis; I have not checked these points against the text of the standard.) **This is not professor-approved:** the dossier, the faculty-supplied document, states `log2(2D/W)` and marks that claim "verify", so the professor must confirm or overrule, and any dossier figure computed with the other form must say so. Until the professor confirms:
 1. every data file, figure and report states which formula produced its ID and throughput;
 2. data collection stores the raw target distance D, width W and movement time per trial, so that ID and throughput can be recomputed under either formula without re-running anyone (the trial schema already has `target_distance_m`, `target_width_m` and the raw movement time; its `fitts_id_bits` column is the provisional Shannon value);
-3. no code or schema is changed for this until the decision is made.
+3. no code is changed (`FittsMath` already implements the working decision); adding a formula label to the trial schema is a Phase 05 schema decision.
 
 Related open points under D-02: nominal width W versus effective width We (effective width is commonly used in ISO 9241-9-style analyses; not checked against the standard's text here), and the minimum-MT safeguard (D-03: 0.1 s in the starter code, 0.4 s in the figure generator).
 
@@ -233,11 +234,11 @@ Statuses are defined at the top of this file. **No row is CONFIRMED.** The same 
 
 | ID | Decision | Current position | Status |
 |---|---|---|---|
-| D-02 | Fitts formula | Shannon `ID = log2(D/W + 1)` (guide §1.1, code) vs the dossier's `log2(2D/W)` (§2, and §1.1 flagged "verify"); both documented in 7.2; neither chosen | PROPOSED (Shannon); **conflict, PENDING PROFESSOR APPROVAL** |
+| D-02 | Fitts formula | **WORKING DECISION (owner, 2026-10-25): Shannon `ID = log2(D/W + 1)`** (guide §1.1, code); the dossier states `log2(2D/W)` (§2; §1.1 flagged "verify"); conflict documented in 7.2 | WORKING DECISION; **conflict, professor confirmation PENDING** |
 | D-03 | Minimum movement-time safeguard | keep raw MT always; apply the 0.1 s floor only for throughput | UNRESOLVED (suggestion) |
 | D-04 | Conditions and design | C1 controller vs C2 gaze+voice; every participant does both; AB/BA order | PROPOSED |
-| D-05 | Participants, sample size, ethics route | able-bodied volunteers only are available; dossier §4: minimum N ≥ 10, recommends 16–20; nothing else assumed | **PENDING PROFESSOR APPROVAL** |
-| D-05a | Change to the accessibility research question caused by an able-bodied sample | options (a)/(b)/(c) in section 1; none chosen | **PENDING PROFESSOR APPROVAL** |
+| D-05 | Participants, sample size, ethics route | mostly able-bodied volunteers plus participants with motor impairment where available; dossier §4: minimum N ≥ 10, recommends 16–20; sample size and ethics nothing assumed | population: WORKING DECISION (2026-10-25); **professor approval and ethics PENDING** |
+| D-05a | Research-question framing for a mostly able-bodied sample with a few motor-impaired participants | accessibility framing kept, every claim limited to the sample, motor-impaired results separate and descriptive (section 1) | WORKING DECISION (2026-10-25); **PENDING PROFESSOR APPROVAL** |
 | D-06 | Gaze-dwell condition | not included unless the professor requires it | PROPOSED (professor may overrule) |
 | D-08 | WER required? | report command accuracy for prompted phrases; WER only if free speech is added | UNRESOLVED (suggestion) |
 | D-09 | Speech route (offline keyword recogniser vs cloud) | keep the offline keyword recogniser (the dossier's toolchain line allows Wit.ai or KeywordRecognizer / DictationRecognizer) | UNRESOLVED (suggestion) |
@@ -248,7 +249,7 @@ Statuses are defined at the top of this file. **No row is CONFIRMED.** The same 
 | Q-04 | Seated vs standing, simulator vs headset | seated; Meta XR Simulator for development; a headset for the study only if one is available (none today) | UNRESOLVED (suggestion) |
 | Q-05 | Compensation and recruitment route | none | UNRESOLVED |
 | Q-06 | Participant identity | pseudonymous IDs P01, P02, ...; team test sessions are never participant data | PROPOSED (enforced in code) |
-| Q-07 | Sample size and ethics requirements | not assumed | **PENDING PROFESSOR APPROVAL** |
+| Q-07 | Sample size and ethics requirements | N = 10 (owner, 2026-10-26); ethics not assumed | sample size: WORKING DECISION; **professor approval and ethics PENDING** |
 
 ## 12. Phase 04 completion status
 
@@ -263,6 +264,8 @@ Exit criteria for closing Phase 04:
 4. Counterbalancing sheet and the analysis plan written and dated before any data collection.
 5. Pilot plan agreed (the pilot itself belongs to Phase 05–06 once the trial manager exists).
 
+**Status update 2026-10-25:** the project owner instructed that the Phase 04 documents be treated as complete for engineering purposes and that Phase 05 begin (`docs/ROADMAP_PHASE05_LIVE_TRIALS.md`). Phase 04 itself is **not** closed: its exit criteria still need the professor's decisions (D-02, D-05/D-05a, Q-02, Q-07) and the ethics route. Phase 05 is therefore provisional, records only `Selftest` data, and refuses `Real` data until the professor approves.
+
 ## 13. What this phase did not do
 
 No code, scene, setting, telemetry file or participant data was changed or created for Phase 04. No approval is claimed: every item is labelled PROPOSED, PENDING PROFESSOR APPROVAL or UNRESOLVED. The manuscript blueprint, the guide, the dossier and every research result file were left untouched. Phase 05 (live trial manager and Fitts' telemetry) has not been started.
@@ -272,3 +275,4 @@ No code, scene, setting, telemetry file or participant data was changed or creat
 - v0.1 (2026-10-23): first draft.
 - v0.2 (2026-10-23): decision status labels added, owner's seven positions recorded, accessibility framing and able-bodied population marked pending, T2 provisional, formula conflict flagged.
 - v0.3 (2026-10-23): dossier checked directly (D-02 locations, §4 sample-size and provenance requirements); research question tied to the authorised title; outcomes and hypotheses defined; trial counts, analysis plan and consent checklist added; `P-01`..`P-07` renamed `Q-01`..`Q-07` to avoid confusion with participant IDs; register updated to match.
+- v0.4 (2026-10-25): the project owner's working decisions recorded: Shannon formula; mostly able-bodied participants plus any motor-impaired volunteers (separate, descriptive reporting). New label WORKING DECISION (not an approval). Ethics considerations for motor-impaired participants added.

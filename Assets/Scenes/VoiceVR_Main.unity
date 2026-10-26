@@ -36947,11 +36947,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Group05.VoiceVR.DesktopVoiceInput
   listenOnStart: 0
   toggleListeningKey: 290
-  minimumRecognizerConfidence: 1
+  minimumRecognizerConfidence: 0
   acceptLowConfidenceUndoCommands: 1
   noSpeechHintAfterSeconds: 10
   enableKeyboardFallback: 1
   toggleTextBoxKey: 289
+  recognizerRoute: 1
+  helperEngine: 0
+  helperAudioSource: 0
+  helperAutoGainEnabled: 0
+  helperMaxGain: 6
   autoStartInXR: 1
   xrControllerToggle: 1
   runInBackground: 1
@@ -52926,8 +52931,8 @@ Transform:
   m_GameObject: {fileID: 1641356048}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.06, y: 0.06, z: 0.06}
+  m_LocalPosition: {x: 0, y: 0, z: 1.925}
+  m_LocalScale: {x: 0.0385, y: 0.0385, z: 0.0385}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -56584,6 +56589,72 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1741555649}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1743715712
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1743715714}
+  - component: {fileID: 1743715713}
+  m_Layer: 0
+  m_Name: LiveTrialManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1743715713
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1743715712}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e275bc7bb8a3aca42853358a5904267a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Group05.VoiceVR.LiveTrialManager
+  condition: 1
+  dataOrigin: 1
+  participantCode: 
+  realDataEnabled: 0
+  distancesM:
+  - 0.5
+  - 1
+  - 2
+  widthsM:
+  - 0.45
+  - 0.32
+  - 0.22
+  repetitions: 3
+  timeLimitSeconds: 15
+  interTrialDelaySeconds: 0.8
+  practiceToMeasuredDelaySeconds: 5
+  targetDepthMeters: 2.5
+  seed: 0
+  startKey: 286
+  abortKey: 287
+  conditionKey: 288
+  showHud: 1
+--- !u!4 &1743715714
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1743715712}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1747531702
 GameObject:
   m_ObjectHideFlags: 0
@@ -69398,3 +69469,4 @@ SceneRoots:
   - {fileID: 714744572}
   - {fileID: 81055836}
   - {fileID: 943180457}
+  - {fileID: 1743715714}

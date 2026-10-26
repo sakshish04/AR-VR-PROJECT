@@ -266,6 +266,79 @@ internal static class StandaloneTests
             Check(VoiceIntentParser.Parse("drop this object").IsActionable && VoiceIntentParser.Parse("carry this object").IsActionable, "grab/drop grammar phrases are actionable");
         }
 
+        // ---------- Phase 05: live trials ----------
+        {
+            var plan = FittsTrialPlanner.Build(12345u, FittsTrialPlanner.DefaultDistancesM, FittsTrialPlanner.DefaultWidthsM, FittsTrialPlanner.DefaultRepetitions, true);
+            int nPractice = 0, nMeasured = 0; foreach (var t in plan) { if (t.Practice) nPractice++; else nMeasured++; }
+            Check(nPractice == 9 && nMeasured == 27 && plan.Count == 36, "default plan: 9 practice + 27 measured trials (3 repetitions of 9 distance x width combinations)");
+            bool idxOk = true; int ip = 0, im = 0;
+            foreach (var t in plan) { if (t.Practice) { ip++; if (t.Index != ip) idxOk = false; } else { im++; if (t.Index != im) idxOk = false; } }
+            Check(idxOk, "practice and measured trials are numbered 1..n separately (they go to separate files)");
+            bool blocksOk = true;
+            for (int b = 1; b <= 3; b++)
+            {
+                var seen = new System.Collections.Generic.HashSet<string>();
+                foreach (var t in plan) if (!t.Practice && t.Block == b) seen.Add(t.DistanceM + "/" + t.WidthM);
+                if (seen.Count != 9) blocksOk = false;
+            }
+            var seenP = new System.Collections.Generic.HashSet<string>(); foreach (var t in plan) if (t.Practice) seenP.Add(t.DistanceM + "/" + t.WidthM);
+            Check(blocksOk && seenP.Count == 9, "every block (and the practice block) contains each of the 9 combinations exactly once");
+            bool ampOk = true, boundOk = true, chainOk = true; float lastP = 0f, lastM = 0f;
+            foreach (var t in plan)
+            {
+                if (Math.Abs(Math.Abs(t.TargetX - t.PreviousX) - t.DistanceM) > 1e-4f) ampOk = false;
+                if (Math.Abs(t.TargetX) > 2.0f + 1e-4f) boundOk = false;
+                float prevExpected = t.Practice ? lastP : lastM;
+                if (Math.Abs(t.PreviousX - prevExpected) > 1e-4f) chainOk = false;
+                if (t.Practice) lastP = t.TargetX; else lastM = t.TargetX;
+            }
+            Check(ampOk, "every target is exactly D away from the previous one (the amplitude of each selection equals the trial's D)");
+            Check(boundOk && chainOk, "targets stay within +/-2 m and each file's chain starts at the home marker (x = 0)");
+            var plan2 = FittsTrialPlanner.Build(12345u, FittsTrialPlanner.DefaultDistancesM, FittsTrialPlanner.DefaultWidthsM, 3, true);
+            var plan3 = FittsTrialPlanner.Build(54321u, FittsTrialPlanner.DefaultDistancesM, FittsTrialPlanner.DefaultWidthsM, 3, true);
+            bool same = plan.Count == plan2.Count, differs = false;
+            for (int i = 0; same && i < plan.Count; i++) if (plan[i].DistanceM != plan2[i].DistanceM || plan[i].WidthM != plan2[i].WidthM || plan[i].TargetX != plan2[i].TargetX) same = false;
+            for (int i = 0; i < plan.Count; i++) if (plan[i].DistanceM != plan3[i].DistanceM || plan[i].WidthM != plan3[i].WidthM) differs = true;
+            Check(same, "the same seed reproduces the same trial order and positions exactly");
+            Check(differs, "a different seed gives a different order");
+            bool badArg = false; try { FittsTrialPlanner.Build(1u, new float[0], FittsTrialPlanner.DefaultWidthsM, 3, true); } catch (ArgumentException) { badArg = true; }
+            bool badArg2 = false; try { FittsTrialPlanner.Build(1u, FittsTrialPlanner.DefaultDistancesM, new[] { 0f }, 3, true); } catch (ArgumentException) { badArg2 = true; }
+            Check(badArg && badArg2, "empty or non-positive distances/widths are rejected");
+
+            TrialSpec spec = plan[9];
+            var eng = new TrialEngine();
+            eng.Start(spec, 10f, 15f);
+            Check(eng.Select(false, false, "", 11f) == null && eng.ErrorCount == 1 && eng.Phase == TrialPhase.Running, "a selection that hits nothing adds an error and the trial continues");
+            TrialResult? ok = eng.Select(true, true, "goal", 12.5f);
+            Check(ok.HasValue && ok.Value.Outcome == TrialOutcome.Success && Near(ok.Value.MovementTimeS, 2.5f) && ok.Value.ErrorCount == 1 && ok.Value.FailureReason == "" && eng.Phase == TrialPhase.Done, "selecting the goal ends the trial as a success with movement time from appearance to selection");
+            Check(eng.Select(true, true, "goal", 13f) == null && eng.Tick(99f) == null, "a finished trial ignores further input");
+            eng.Start(spec, 0f, 15f);
+            TrialResult? wrong = eng.Select(true, false, "previous", 1.2f);
+            Check(wrong.HasValue && wrong.Value.Outcome == TrialOutcome.Failure && wrong.Value.FailureReason == "wrong_target" && wrong.Value.ErrorCount == 1, "selecting another target ends the trial as a wrong_target failure");
+            eng.Start(spec, 0f, 15f);
+            Check(eng.Tick(14.9f) == null, "no timeout before the limit");
+            TrialResult? to = eng.Tick(15f);
+            Check(to.HasValue && to.Value.Outcome == TrialOutcome.Failure && to.Value.FailureReason == "timeout" && Near(to.Value.MovementTimeS, 15f), "reaching the time limit ends the trial as a timeout failure");
+            eng.Start(spec, 0f, 15f);
+            TrialResult? ab = eng.Abandon(3f, "experimenter_stop");
+            Check(ab.HasValue && ab.Value.Outcome == TrialOutcome.Cancelled && ab.Value.FailureReason == "experimenter_stop", "abandoning a trial records a cancelled outcome with the reason");
+
+            var good = TrialRecordFactory.Create(ok.Value, "20261025T100000Z", DataOrigin.Selftest, TrialRecordFactory.PseudonymFor(DataOrigin.Selftest, null), TrialRecord.ConditionGazeVoice,
+                                                 InputModality.Voice, new DateTime(2026, 10, 25, 10, 0, 0, DateTimeKind.Utc), new DateTime(2026, 10, 25, 10, 0, 3, DateTimeKind.Utc), "select that", 480f);
+            Check(good.Validate().Count == 0 && CountCsvColumns(good.ToCsvRow()) == TrialRecord.ColumnCount, "a successful trial becomes a valid 25-column trial record");
+            var badRec = TrialRecordFactory.Create(wrong.Value, "20261025T100000Z", DataOrigin.Real, "Alice Smith", TrialRecord.ConditionController,
+                                                InputModality.Controller, DateTime.UtcNow, DateTime.UtcNow, "", float.NaN);
+            Check(badRec.Validate().Count > 0, "real-origin data with a non-pseudonym (a name) is refused by the record validation");
+            string tmp = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "g5_trials_" + Guid.NewGuid().ToString("N").Substring(0, 6));
+            var tw = new TrialCsvWriter(tmp, "20261025T100000Z", DataOrigin.Selftest);
+            var tpw = new TrialCsvWriter(tmp, "20261025T100000Z-practice", DataOrigin.Selftest);
+            Check(tw.TryWrite(good) && tpw.TryWrite(TrialRecordFactory.Create(wrong.Value, "20261025T100000Z-practice", DataOrigin.Selftest, "SELFTEST", TrialRecord.ConditionController, InputModality.Controller, DateTime.UtcNow, DateTime.UtcNow, "", float.NaN))
+                  && tw.FilePath != tpw.FilePath, "measured and practice trials are written to two separate files");
+            try { System.IO.Directory.Delete(tmp, true); } catch (Exception) { }
+            string info = TrialSessionInfo.Build("S1", DataOrigin.Selftest, "SELFTEST", TrialRecord.ConditionGazeVoice, 42u, 15f, 3, FittsTrialPlanner.DefaultDistancesM, FittsTrialPlanner.DefaultWidthsM, "Auto", "draft, not approved", DateTime.UtcNow);
+            Check(info.Contains("log2(D/W + 1)") && info.Contains("seed: 42") && info.Contains("professor confirmation pending") && info.Contains("-practice"), "the session sidecar states the Fitts formula, the seed and that approval is pending");
+        }
+
         // ---------- speech helper protocol ----------
         {
             var ph = ExternalRecognizerProtocol.Parse("PHRASE|0.912|2026-10-23T10:22:55.123Z|move left");
@@ -280,6 +353,8 @@ internal static class StandaloneTests
             var hd = ExternalRecognizerProtocol.Parse("HEARD|rejected|0.123|move lift");
             Check(hd.Kind == ExternalRecognizerProtocol.Kind.Heard && hd.Text == "move lift" && Near(hd.Confidence, 0.123f), "a HEARD line (speech detected, not matched) parses");
             Check(ExternalRecognizerProtocol.Parse("HEARD|rejected|0.0|").Kind == ExternalRecognizerProtocol.Kind.Heard && ExternalRecognizerProtocol.Parse("HEARD|rejected").Kind == ExternalRecognizerProtocol.Kind.Ignored, "an empty best guess is still a HEARD line; a truncated one is ignored");
+            Check(ExternalRecognizerProtocol.Parse("PROBLEM|TooQuiet").Kind == ExternalRecognizerProtocol.Kind.Problem && ExternalRecognizerProtocol.Parse("PROBLEM|TooQuiet").Text == "TooQuiet", "a PROBLEM line parses");
+            Check(ExternalRecognizerProtocol.ProblemAdvice("TooQuiet").Contains("louder") && ExternalRecognizerProtocol.ProblemAdvice("TooLoud").Contains("softer") && ExternalRecognizerProtocol.ProblemAdvice("NoSignal").Contains("muted") && ExternalRecognizerProtocol.ProblemAdvice("Weird").Contains("Weird"), "every audio problem has plain advice");
             Check(ExternalRecognizerProtocol.RankName(0) == "High" && ExternalRecognizerProtocol.RankName(1) == "Medium" && ExternalRecognizerProtocol.RankName(2) == "Low", "rank names");
             var t0 = new DateTime(2026, 10, 23, 10, 0, 0, DateTimeKind.Utc);
             var withEnd = ExternalRecognizerProtocol.Parse("PHRASE|0.9|2026-10-23T10:00:00.000Z|drop it");

@@ -24,6 +24,8 @@ $dll = Join-Path $out "StandaloneTests.dll"
     (Join-Path $root "Assets\Scripts\Interaction\GazeInteractionModel.cs") `
     (Join-Path $root "Assets\Scripts\Interaction\HudText.cs") `
     (Join-Path $root "Assets\Scripts\Lab\LabPlacementRules.cs") `
+    (Join-Path $root "Assets\Scripts\Trials\FittsTrialPlan.cs") `
+    (Join-Path $root "Assets\Scripts\Trials\TrialEngine.cs") `
     (Join-Path $root "Assets\Scripts\Voice\ExternalRecognizerProtocol.cs") `
     (Join-Path $root "Assets\Scripts\Voice\VoiceConfidencePolicy.cs")
 if ($LASTEXITCODE -ne 0) { Write-Error "Compile failed"; exit 2 }

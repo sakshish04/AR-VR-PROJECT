@@ -11,6 +11,9 @@
 ## What is this study about?
 We are testing two ways of interacting with objects in a virtual reality lab: (1) a handheld controller, and (2) looking at an object and giving short spoken commands such as "select that" or "move left". We want to know which is faster and easier. This is a student project; we are testing our software, not you.
 
+## Who can take part?
+Adult volunteers. We welcome people of all abilities, including people who find handheld controllers hard to use because of their hands, arms or voice. [TO BE FILLED — subject to professor and ethics approval of including participants with motor impairment.] If you would like the session adapted (seating, breaks, more time, large print, someone with you), tell us beforehand and we will arrange it.
+
 ## What will I be asked to do?
 - Sit in a chair and wear a virtual reality headset [TO BE FILLED — or look at the simulator on a screen, depending on Q-04].
 - Complete short tasks in both ways: reach and select targets, and (if included) carry items to marked places.

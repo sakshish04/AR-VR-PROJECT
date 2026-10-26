@@ -21,4 +21,7 @@
   <uses-permission android:name="com.oculus.permission.HAND_TRACKING" />
   <uses-permission android:name="com.oculus.permission.USE_ANCHOR_API" />
   <uses-permission android:name="com.oculus.permission.USE_SCENE" />
+  <!-- Voice commands on the headset (Meta Voice SDK dictation): microphone, and the network for the Wit.ai fallback -->
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+  <uses-permission android:name="android.permission.INTERNET" />
 </manifest>

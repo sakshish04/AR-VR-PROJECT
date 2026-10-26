@@ -5,7 +5,7 @@
 How to use it:
 - Slots are filled **in the order participants enrol**. The next free code (shown in the second column) is **issued only to a real participant after the consent form is signed**; this sheet does not assign any code to any person.
 - Odd slots do **C1 (controller) first**, even slots do **C2 (gaze + voice) first**. The order is fixed here, in advance, and is never chosen per participant.
-- 20 slots are listed because the dossier recommends N = 16-20 and requires at least 10 (dossier §4). The number actually needed is **PENDING PROFESSOR APPROVAL (Q-07)**; unused slots stay empty.
+- 20 slots are listed because the dossier recommends N = 16-20 and requires at least 10 (dossier §4). The owner's working decision (2026-10-26) is **N = 10**, so slots 1–10 are the planned sessions and slots 11–20 stay empty unless the professor asks for more. **Professor approval PENDING (Q-07).**
 - Fill the last three columns by hand after each session. Never write a name here.
 - Pilot sessions by team members are **not** entered here (no code, label `Selftest`).
 

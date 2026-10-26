@@ -14,6 +14,6 @@ Participant code: ______   Date: ____________   Session slot: ____ (see `05_coun
 8. Have you ever felt unwell (dizzy, nauseous) in VR or in a moving vehicle? ☐ no  ☐ sometimes  ☐ often (if "often", tell the experimenter before starting)
 9. Any condition that makes you unsafe in VR (for example seizures triggered by flashing lights)? ☐ no  ☐ yes → do not take part
 10. Any difficulty with using your hands, arms or voice that we should know about? ☐ no  ☐ yes (optional note): ______________
-    *(Recorded only so that the results can describe the group honestly. It does not exclude anyone. Whether a motor-impaired group can be recruited is an open decision, D-05 / D-05a.)*
+    *(Optional, and only used if the ethics board allows recording it. It never excludes anyone. It lets results from the few participants with motor impairment, if any, be reported separately and honestly instead of being mixed into the main comparison. Skipping it is fine. Whether this participant mix is acceptable is an open decision, D-05 / D-05a: working decision 2026-10-25, professor approval pending.)*
 
 For the researcher: ☐ questions 8 and 9 checked before the headset is put on.

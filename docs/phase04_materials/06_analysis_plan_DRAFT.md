@@ -9,12 +9,12 @@ Date written: 2026-10-24. Author: project team. Approval: **PENDING PROFESSOR AP
 | Item | Status |
 |---|---|
 | Design: within-subject, C1 controller vs C2 gaze+voice, AB/BA order | PROPOSED (D-04) |
-| Population: able-bodied volunteers; accessibility framing | **PENDING PROFESSOR APPROVAL** (D-05, D-05a) |
-| Sample size | **PENDING PROFESSOR APPROVAL** (Q-07); dossier §4 says at least 10, recommends 16–20 |
+| Population: mostly able-bodied volunteers, plus participants with motor impairment where available (expected few); accessibility framing limited to what the sample supports | WORKING DECISION (owner, 2026-10-25); **PENDING PROFESSOR APPROVAL** and ethics review (D-05, D-05a) |
+| Sample size | WORKING DECISION (owner, 2026-10-26): **N = 10** (dossier §4 minimum; recommends 16–20); no power calculation; **professor approval PENDING** (Q-07) |
 | Outcomes | UNRESOLVED suggestion (Q-01) |
-| Fitts' Law formula | **PENDING PROFESSOR APPROVAL** (D-02): Shannon `log2(D/W+1)` vs dossier `log2(2D/W)` |
+| Fitts' Law formula | WORKING DECISION (owner, 2026-10-25): Shannon `log2(D/W+1)`; the dossier states `log2(2D/W)`, so **professor confirmation is PENDING** (D-02) |
 
-Everything below holds under either formula; the formula only changes how the ID column is computed (section 4).
+The plan is written for the Shannon form; if the professor chooses the dossier's form instead, only how the ID column is computed changes (section 4).
 
 ## 2. Data used
 
@@ -36,7 +36,7 @@ Practice trials are never analysed.
 
 ## 4. Index of difficulty and throughput
 
-Raw D, W and movement time are stored per trial, so ID can be recomputed under either formula. **Nothing is mixed:** one formula is chosen by the professor before analysis, stated on every table and figure, and the other may be given in an appendix. Nominal width vs effective width, and the minimum-movement-time floor (D-03), are decided together with D-02; raw MT is always kept and the floor, if any, is applied only to throughput.
+Working decision (2026-10-25): `ID = log2(D/W + 1)`, `TP = ID / MT`. Raw D, W and movement time are stored per trial, so ID can be recomputed under either formula. **Nothing is mixed:** one formula is used throughout, stated on every table and figure, and the professor's confirmation (or a switch to the dossier's `log2(2D/W)`) is applied to the whole dataset before analysis; the other form may be given in an appendix. Nominal width vs effective width, and the minimum-movement-time floor (D-03), are decided together with D-02; raw MT is always kept and the floor, if any, is applied only to throughput.
 
 ## 5. Confirmatory comparisons
 
@@ -47,6 +47,15 @@ For each co-primary outcome: paired comparison C2 vs C1 across participants.
 - Two co-primary outcomes: the significance threshold is divided between them (Holm correction) unless the professor prefers another rule; this is stated in advance.
 
 Secondary and descriptive outcomes are reported with the same paired approach but labelled **exploratory**; no claim rests on them alone.
+
+## 5a. Participants with motor impairment (working decision, pending professor and ethics approval)
+
+The sample is expected to be mostly able-bodied; a few participants with motor impairment may take part (D-05, D-05a).
+- The confirmatory comparison in section 5 is run on the **able-bodied group only**, and its N is stated.
+- Participants with motor impairment are **never pooled silently** into that comparison. Their results are reported **separately and descriptively**: each participant's values per condition (individual points, not just means) and the difference C2 − C1 per person. No significance test across groups is run unless the numbers are large enough that the professor agrees one is meaningful.
+- Group membership comes only from the optional self-report item (background questionnaire question 10), and only if the ethics board allows recording it. Without that item, everyone is analysed as one group and no accessibility statement is made.
+- Adaptations made for a participant (seating, breaks, longer time limits, using one condition only) are taken from the session notes and reported alongside their results. A participant who could use only one condition contributes to the descriptive report but not to the paired comparison.
+- Wording rule: conclusions about users with motor impairment are limited to "in the few participants who took part"; nothing is generalised to the population.
 
 ## 6. Order and carry-over
 

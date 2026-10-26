@@ -15,12 +15,13 @@ namespace Group05.VoiceVR
     ///   READY|&lt;engine id&gt;                         the engine is listening
     ///   PHRASE|&lt;confidence 0..1&gt;|&lt;speech end, UTC ISO-8601 or empty&gt;|&lt;recognized text&gt;
     ///   HEARD|rejected|&lt;confidence 0..1&gt;|&lt;best guess text, may be empty&gt;   speech was detected but matched no command (never executed)
+    ///   PROBLEM|&lt;TooQuiet, TooLoud, TooNoisy, TooFast, TooSlow, NoSignal, ...&gt;   why the engine could not understand the audio
     ///   ERROR|&lt;message&gt;
     /// Anything else is ignored. The recognized text is always one of the fixed grammar phrases; it is never executed, only parsed by VoiceIntentParser.
     /// </summary>
     public static class ExternalRecognizerProtocol
     {
-        public enum Kind { Ignored, Ready, Phrase, Error, Heard }
+        public enum Kind { Ignored, Ready, Phrase, Error, Heard, Problem, Hypothesis }
 
         public struct Message
         {
@@ -53,6 +54,21 @@ namespace Group05.VoiceVR
             switch (rank) { case 0: return "High"; case 1: return "Medium"; default: return "Low"; }
         }
 
+        /// <summary>Plain-language advice for an audio problem reported by the engine.</summary>
+        public static string ProblemAdvice(string problem)
+        {
+            switch (problem)
+            {
+                case "TooQuiet": return "Microphone says: too quiet. Speak a little louder or move closer to the laptop.";
+                case "TooLoud": return "Microphone says: too loud (distorted). Speak softer or move back a little.";
+                case "TooNoisy": return "Microphone says: too much background noise. Move to a quieter spot or closer to the microphone.";
+                case "TooFast": return "Microphone says: too fast. Speak a little slower.";
+                case "TooSlow": return "Microphone says: too slow. Say the phrase in one go.";
+                case "NoSignal": return "Microphone says: no signal. Check the microphone is not muted and is the Windows default input.";
+                default: return "Microphone problem reported: " + (problem ?? "unknown") + ".";
+            }
+        }
+
         public static Message Parse(string line)
         {
             var m = new Message { Kind = Kind.Ignored, Text = "", Confidence = float.NaN };
@@ -65,6 +81,17 @@ namespace Group05.VoiceVR
 
             if (tag == "READY") { m.Kind = Kind.Ready; m.Text = rest; return m; }
             if (tag == "ERROR") { m.Kind = Kind.Error; m.Text = rest; return m; }
+            if (tag == "PROBLEM") { m.Kind = Kind.Problem; m.Text = rest.Trim(); return m; }
+            if (tag == "HYP")
+            {
+                int hb = rest.IndexOf('|');
+                float hc;
+                if (hb < 0 || !float.TryParse(rest.Substring(0, hb), NumberStyles.Float, CultureInfo.InvariantCulture, out hc) || float.IsNaN(hc) || float.IsInfinity(hc)) return m;
+                m.Kind = Kind.Hypothesis;
+                m.Confidence = hc;
+                m.Text = rest.Substring(hb + 1).Trim();
+                return m;
+            }
             if (tag == "HEARD")
             {
                 // HEARD|rejected|confidence|text

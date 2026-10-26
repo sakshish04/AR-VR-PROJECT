@@ -82,6 +82,9 @@ namespace Group05.VoiceVR
         [Tooltip("Writes only VALID focus into legacyController.focusedSpatialObject (after its own Update). The starter code itself is unchanged.")]
         public bool syncFocusToLegacyController = true;
 
+        /// <summary>Raised after every command has been handled (result known, state updated). Observers only read; they must not call back into SubmitParsed.</summary>
+        public event Action<ParsedIntent, CommandResult, InputModality> CommandHandled;
+
         public GazeInteractionModel Model { get; } = new GazeInteractionModel();
         public SpatialTarget FocusedTarget { get; private set; }
         public SpatialTarget SelectedTarget { get; private set; }
@@ -378,6 +381,15 @@ namespace Group05.VoiceVR
             LogEvent(now, GazeEventRecord.Command, r.TargetName ?? Model.FocusedName, modality, parsed.Kind.ToString(), r.Outcome.ToString().ToLowerInvariant(), r.Reason);
             // Tell the voice telemetry row what this command did (synchronous; DesktopVoiceInput only uses it for recognizer events).
             if (voiceInput != null) voiceInput.ReportActionOutcome(VoiceTelemetryRecord.OutcomeCode(r.Outcome, r.Reason));
+            Action<ParsedIntent, CommandResult, InputModality> observers = CommandHandled;
+            if (observers != null)
+            {
+                foreach (Delegate d in observers.GetInvocationList())
+                {
+                    try { ((Action<ParsedIntent, CommandResult, InputModality>)d)(parsed, r, modality); }
+                    catch (Exception ex) { UnityEngine.Debug.LogError("[GazeFocusSystem] CommandHandled observer threw: " + ex); }
+                }
+            }
             return r;
         }
 

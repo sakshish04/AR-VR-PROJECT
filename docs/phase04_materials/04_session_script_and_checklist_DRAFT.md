@@ -36,6 +36,13 @@ Give a printed **command card** with the exact grammar phrases (from `Assets/Scr
 5. Questionnaires for this condition: NASA-TLX (raw, six subscales 0–100) and SUS (ten items, 1–5).
 6. Note for the session sheet: technical problems, restarts, anything that affected a trial (with the time).
 
+### D2. Adapting for a participant with motor impairment (only after ethics approval covers it)
+
+- Ask at the start what would make the session comfortable (seating, arm support, breaks, how they prefer to hold or not hold the controller). Offer the information sheet and consent form in large print or read aloud, and welcome a companion of their choice.
+- Allow longer time limits **for that participant only if the protocol allows**, and write down exactly what was changed; do not improvise silently.
+- If they cannot use one condition, say so without pressure: run the condition they can, record why the other was not done, and keep their data in the separate descriptive report (analysis plan 5a).
+- They may stop at any time; the stop rules in section F apply unchanged.
+
 ## E. Between conditions
 
 Rest at least 5 minutes, water, SSQ (simulator-sickness questionnaire, 16 symptoms, 0–3). Ask how they feel. If they report more than mild symptoms, offer to stop (see F).
