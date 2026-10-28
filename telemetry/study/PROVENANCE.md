@@ -6,7 +6,8 @@
 - NASA-TLX was answered on a 0-10 scale; `tlx_responses.csv` stores each answer x10 (0-100). Raw TLX = mean of the six subscales.
 
 Files:
-- `questionnaire_responses.csv`: the transcription as exported, minus the Timestamp column.
+- `form_responses_original.csv`: the Google Form response sheet exactly as downloaded (Timestamp column was typed during transcription).
+- `questionnaire_responses.csv`: the same file minus the Timestamp column.
 - `sus_responses.csv`, `tlx_responses.csv`: the same answers in the analysis format.
 - `study_summary.csv`: output of `analyze_study.py`.
 - `figures/`: output of `plot_study.py`.
