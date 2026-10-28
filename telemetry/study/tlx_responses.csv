@@ -1,0 +1,13 @@
+participant_code,condition,mental,physical,temporal,performance,effort,frustration
+P01,voice,50,20,30,80,30,30
+P02,voice,50,10,90,90,30,60
+P03,controller,70,60,0,60,90,50
+P04,voice,100,10,100,60,100,70
+P03,voice,40,20,80,100,30,0
+P05,voice,60,20,90,100,20,80
+P06,voice,80,30,10,100,40,0
+P07,voice,40,20,30,0,20,0
+P08,controller,90,80,80,70,10,20
+P09,voice,70,40,60,80,40,20
+P10,controller,50,90,50,40,70,60
+P10,voice,40,20,60,0,10,0
